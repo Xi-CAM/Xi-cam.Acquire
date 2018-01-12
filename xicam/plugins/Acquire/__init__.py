@@ -7,7 +7,6 @@ from xicam.core import msg
 from xicam.core.data import load_header, NonDBHeader
 
 from xicam.plugins import GUIPlugin, GUILayout, manager as pluginmanager
-from xicam.gui.widgets.dataresourcebrowser import DataResourceBrowser
 from .pythontools.toolswidget import AdvancedPythonWidget
 from .controlwidgets.BCSConnector import BCSConnector
 
