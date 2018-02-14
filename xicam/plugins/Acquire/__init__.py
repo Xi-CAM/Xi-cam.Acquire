@@ -9,17 +9,29 @@ from xicam.core.data import load_header, NonDBHeader
 from xicam.plugins import GUIPlugin, GUILayout, manager as pluginmanager
 from .pythontools.toolswidget import AdvancedPythonWidget
 from .controlwidgets.BCSConnector import BCSConnector
-
+from .controlwidgets.devicelist import DeviceList
 
 class AcquirePlugin(GUIPlugin):
     name = 'Acquire'
     sigLog = Signal(int, str, str, np.ndarray)
 
     def __init__(self):
-        self.stages = {'Controls': GUILayout(QWidget(), leftbottom=BCSConnector()),
-                       'Scripting': GUILayout(AdvancedPythonWidget()),
+        devicelist = DeviceList()
+        controlsstack = QStackedWidget()
+        devicelist.sigShowControl.connect(controlsstack.addSetWidget)
+
+        self.stages = {'Controls': GUILayout(controlsstack,
+                                             left=devicelist,
+                                             lefttop=BCSConnector(),
+                                             ),
+                       'Scripting': GUILayout(AdvancedPythonWidget(),
+                                              left=devicelist,
+                                              lefttop=BCSConnector()),
                        }
         super(AcquirePlugin, self).__init__()
 
-    def appendHeader(self, doc: NonDBHeader, **kwargs):
-        self.stages['Calibrate'].centerwidget.setHeader(doc)
+
+class QStackedWidget(QStackedWidget):
+    def addSetWidget(self, w):
+        self.addWidget(w)
+        self.setCurrentWidget(w)

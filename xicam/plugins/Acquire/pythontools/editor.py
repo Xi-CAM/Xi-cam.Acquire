@@ -1,9 +1,13 @@
+import os, sys
+import stat
 from qtpy.QtWidgets import *
 from pyqode.core import panels, api, modes
 from pyqode.python import widgets, panels as pypanels, modes as pymodes
 from pyqode.python.backend import server
 from functools import partial
-
+from xicam.gui.threads import QThreadFuture
+import subprocess
+from appdirs import user_config_dir
 
 class scripteditor(QWidget):
     def __init__(self):
@@ -29,10 +33,27 @@ class scripteditortoolbar(QToolBar):
         self.addAction('Create Action', self.CreateAction)
 
     def Run(self, script=None):
-        if script:
-            exec(script)
-        else:
-            exec(self.editor.toPlainText())
+        if not script: script = self.editor.toPlainText()
+
+        self._runthread = QThreadFuture(partial(exec, script))
+        self._runthread.start()
+
+
+        # tmpdir = user_config_dir('xicam/tmp')
+        #
+        # if not os.path.isdir(tmpdir): os.mkdir(tmpdir)
+        #
+        # tmppath = os.path.join(tmpdir,'tmp.py')
+        #
+        # with open(tmppath,'w') as f:
+        #     f.write(script)
+        #     # f.close()
+        #
+        # st = os.stat(tmppath)
+        # os.chmod(tmppath, st.st_mode | stat.S_IEXEC)
+        #
+        # subprocess.call([sys.executable, tmppath])
+
 
     def CreateAction(self):
         p = partial(self.Run, self.editor.toPlainText())
@@ -92,11 +113,24 @@ class scripteditoritem(widgets.PyCodeEditBase):
 
         # self.file.open('test.py')
         self.insertPlainText('''
-import py4syn
+# Required to allow controls manipulation in background
+import asyncio
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+        
+# Setup RunEngine
+from bluesky import RunEngine
+from bluesky.plans import inner_product_scan
+RE = RunEngine({})
+        
+# Set up simulated hardware.
+from ophyd.sim import det4, motor1, motor2, motor3
+# The 'det4' example detector a 2D Gaussian function of motor1, motor2.
 
-py4syn.mtrDB['m1'].setValue(10)
-py4syn.mtrDB['m2'].setValue(5)
-py4syn.mtrDB['m1'].setValue(0)
+# Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
+RE(inner_product_scan([det4], 5,
+                      motor1, 1, 5,
+                      motor2, 10, 50))
 ''')
 
     def cleanup(self):
