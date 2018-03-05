@@ -80,7 +80,7 @@ class MotorControl(QWidget):
         self.currentVMin.setText(str(min))
 
     def _setCurrentValue(self, value=None, obj=None, **kwargs):
-        if obj: value = obj.value
+        if obj: value = obj.get()
         self.currentHSlider.setValue(value)
         self.currentVSlider.setValue(value)
         self.currentDial.setValue(value)
