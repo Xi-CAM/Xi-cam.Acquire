@@ -17,20 +17,20 @@ class DeviceList(QListView):
         self._model = QStandardItemModel()
 
         # Setup simulated motors
-        sim.__dict__['motor1'] = sim.SynAxis(name='motor1', delay=.1)
-        sim.__dict__['motor2'] = sim.SynAxis(name='motor2', delay=.1)
-        sim.__dict__['motor3'] = sim.SynAxis(name='motor3', delay=.1)
+        sim1 = sim.SynAxis(name='motor1', delay=.1)
+        sim2 = sim.SynAxis(name='motor2', delay=.1)
+        sim3 = sim.SynAxis(name='motor3', delay=.1)
 
-        self._model.appendRow(DeviceItem('"Gaussian" Detector', sim.det4))
-        self._model.appendRow(DeviceItem('X motor', sim.motor1))
-        self._model.appendRow(DeviceItem('Y motor', sim.motor2))
-        self._model.appendRow(DeviceItem('Z motor', sim.motor3))
+        # self._model.appendRow(DeviceItem('"Gaussian" Detector', sim.det4))
+        self._model.appendRow(DeviceItem('X motor', sim1))
+        self._model.appendRow(DeviceItem('Y motor', sim2))
+        self._model.appendRow(DeviceItem('Z motor', sim3))
 
         # Watch each item
-        self.refreshtimer = QTimer()
-        self.refreshtimer.setInterval(.1)
-        self.refreshtimer.timeout.connect(self.refreshDevices)
-        self.refreshtimer.start()
+        # self.refreshtimer = QTimer()
+        # self.refreshtimer.setInterval(.1)
+        # self.refreshtimer.timeout.connect(self.refreshDevices)
+        # self.refreshtimer.start()
 
         self.setModel(self._model)
 
