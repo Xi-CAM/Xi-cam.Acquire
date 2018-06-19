@@ -55,6 +55,8 @@ class DeviceItem(QStandardItem):
 
     @property
     def widget(self):
+        from typhon import DeviceDisplay
+        import typhon.plugins
         if self._widget is None:
-            self._widget = MotorControl(self)
+            self._widget = DeviceDisplay(self.device)
         return self._widget
