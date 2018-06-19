@@ -117,7 +117,7 @@ class scripteditoritem(widgets.PyCodeEditBase):
 import asyncio
 # Setup RunEngine
 from bluesky import RunEngine
-from bluesky.plans import inner_product_scan
+from bluesky.plans import scan
 from ophyd.sim import det4, motor1, motor2, motor3
 
 loop = asyncio.new_event_loop()
@@ -130,9 +130,12 @@ RE = RunEngine({}, context_managers=[], loop=loop)
 # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
 
 # Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
-RE(inner_product_scan([det4], 5,
-                      motor1, 1, 5,
-                      motor2, 10, 50))
+RE(scan([det4],
+        motor1, 1, 5,
+        motor2, 10, 50,
+        5),
+   print)
+
 ''')
 
     def cleanup(self):
