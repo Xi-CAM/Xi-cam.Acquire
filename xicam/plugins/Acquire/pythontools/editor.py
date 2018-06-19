@@ -115,16 +115,18 @@ class scripteditoritem(widgets.PyCodeEditBase):
         self.insertPlainText('''
 # Required to allow controls manipulation in background
 import asyncio
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-        
 # Setup RunEngine
 from bluesky import RunEngine
 from bluesky.plans import inner_product_scan
-RE = RunEngine({})
-        
-# Set up simulated hardware.
 from ophyd.sim import det4, motor1, motor2, motor3
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
+RE = RunEngine({}, context_managers=[], loop=loop)
+
+# Set up simulated hardware.
+
 # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
 
 # Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
