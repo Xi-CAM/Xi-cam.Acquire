@@ -2,8 +2,7 @@ from qtpy.QtWidgets import *
 from qtpy.QtGui import *
 from qtpy.QtCore import *
 
-import ophyd
-from ophyd import sim
+from ophyd import sim, Device, Component as Cpt
 
 from .motor import MotorControl
 
@@ -26,6 +25,13 @@ class DeviceList(QListView):
         self._model.appendRow(DeviceItem('Y motor', sim2))
         self._model.appendRow(DeviceItem('Z motor', sim3))
 
+        class MultiAxis(Device):
+            x = Cpt(sim.SynAxis)
+            y = Cpt(sim.SynAxis)
+            z = Cpt(sim.SynAxis)
+
+        ma = MultiAxis(name='multi')
+        self._model.appendRow(DeviceItem('Stage', ma))
         # Watch each item
         # self.refreshtimer = QTimer()
         # self.refreshtimer.setInterval(.1)
@@ -57,6 +63,9 @@ class DeviceItem(QStandardItem):
     def widget(self):
         from typhon import DeviceDisplay
         import typhon.plugins
+        from pydm.PyQt.QtGui import QApplication
         if self._widget is None:
             self._widget = DeviceDisplay(self.device)
+            pydm_app = QApplication.instance()
+            pydm_app.establish_widget_connections(self._widget)
         return self._widget
