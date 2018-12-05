@@ -15,10 +15,13 @@ from xicam.plugins import manager as pluginmanager
 class ipythonconsole(RichJupyterWidget):
     def __init__(self):
         super(ipythonconsole, self).__init__()
-        ipythonplugin = pluginmanager.getPluginByName('IPython', 'GUIPlugin').plugin_object
+        plugin_obj = pluginmanager.getPluginByName('IPython', 'GUIPlugin')
+        ipp = plugin_obj.plugin_object
+        if callable(ipp):
+            ipp = plugin_obj.plugin_object = ipp()
 
-        self.kernel_manager = ipythonplugin.kernel_manager
-        self.kernel_client = ipythonplugin.kernel_client
+        self.kernel_manager = ipp.kernel_manager
+        self.kernel_client = ipp.kernel_client
 
         # self.style_sheet = (qdarkstyle.load_stylesheet())
         self.syntax_style = u'monokai'
