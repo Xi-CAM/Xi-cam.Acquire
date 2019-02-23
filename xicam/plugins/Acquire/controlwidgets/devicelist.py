@@ -6,6 +6,7 @@ from alsdac import ophyd as alsophyd
 import ophyd
 from ophyd.utils.epics_pvs import BadPVName
 from xicam.core import msg
+from xicam.gui import threads
 
 from .motor import MotorControl
 
@@ -18,6 +19,14 @@ class DeviceList(QListView):
 
         self._model = QStandardItemModel()
 
+        self.refresh()
+
+        self.setModel(self._model)
+
+    @threads.method
+    def refresh(self):
+        self._model.clear()
+
         # Find devices
         motors = ophyd.EpicsSignalRO('beamline:motors:devices', name='motors').value
         ais = ophyd.EpicsSignalRO('beamline:ais:devices', name='ais').value
@@ -29,8 +38,6 @@ class DeviceList(QListView):
                 self._model.appendRow(DeviceItem(pvname, alsophyd.Motor('beamline:motors:' + pvname, name=pvname)))
             except BadPVName:
                 msg.logMessage(f'PV named "{pvname}" is invalid.', msg.WARNING)
-
-        self.setModel(self._model)
 
     def selectionChanged(self, *args, **kwargs):
         indexes = self.selectedIndexes()

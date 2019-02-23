@@ -13,21 +13,37 @@ from alsdac import ophyd
 from bluesky import RunEngine
 from bluesky.plans import count
 from xicam.core.data import NonDBHeader
+from xicam.gui import threads
+from ophyd import areadetector
 
 from xicam.core import msg
 
 
-class DataResourceAcquireView(QPushButton):
+class DataResourceAcquireView(QWidget):
     sigOpen = Signal(NonDBHeader)
 
     def __init__(self, model):
         super(DataResourceAcquireView, self).__init__()
-        self.setText('Acquire')
         self.model = model
-        self.clicked.connect(self.acquire)
+
+        self.setLayout(QFormLayout())
+
+        self.PVname = QLineEdit('adimage:')
+        self.layout().addWidget(self.PVname)
+
+        self.acquirebtn = QPushButton('Acquire')
+        self.acquirebtn.clicked.connect(self.acquire)
+        self.layout().addWidget(self.acquirebtn)
+
+        self.livebtn = QPushButton('Live')
+        self.livebtn.clicked.connect(self.liveacquire)
+        self.layout().addWidget(self.livebtn)
 
     def acquire(self):
-        self.sigOpen.emit(self.model.dataresource.pull())
+        self.sigOpen.emit(self.model.dataresource.pull(self.PVname.text()))
+
+    def liveacquire(self):
+        self.model.dataresource.stream_to(self.sigOpen.emit(self.PVname.text()))
 
 
 class DataResourceAcquireModel(QObject):
@@ -59,15 +75,32 @@ class OphydDataResourcePlugin(DataResourcePlugin):
         super(OphydDataResourcePlugin, self).__init__(**self.config)
 
         self.RE = RunEngine()
-        self.instrument = ophyd.Instrument('beamline:instruments:ptGreyInstrument', name='ptGreyInstrument')
 
-    def pull(self):
+    def pull(self, pvname):
+        class SC(areadetector.cam.SimDetectorCam):
+            pool_max_buffers = None
+
+        class IP(areadetector.ImagePlugin):
+            pool_max_buffers = None
+
+        class Detector(areadetector.SimDetector):
+            image1 = areadetector.Component(IP, 'image1:')
+            cam = areadetector.Component(SC, 'cam1:')
+
+        instrument = Detector(pvname, name=pvname)
+
         docs = {'start': [],
                 'descriptor': [],
                 'event': [],
                 'stop': []}
-        self.RE(count([self.instrument]), lambda doctype, doc: docs[doctype].append(doc))
+        self.RE(count([instrument]), lambda doctype, doc: docs[doctype].append(doc))
         return NonDBHeader(docs['start'][0], docs['descriptor'], docs['event'], docs['stop'][0])
+
+    @threads.method
+    def stream_to(self, receiver):
+        instrument = ophyd.Instrument(self.view.PVname.text(), name=self.view.PVname.text())
+        print(instrument)
+        self.RE(count([instrument], 100, delay=.1), receiver)
 
     def _showProgress(self, progress: int, maxprogress: int):
         threads.invoke_in_main_thread(msg.showProgress, progress, 0, maxprogress)
