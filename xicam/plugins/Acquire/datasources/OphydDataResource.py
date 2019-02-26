@@ -19,7 +19,7 @@ class DataResourceAcquireView(QWidget):
 
         self.setLayout(QFormLayout())
 
-        self.PVname = QLineEdit('adimage:')
+        self.PVname = QLineEdit('ALS:701:')
         self.layout().addWidget(self.PVname)
 
         self.acquirebtn = QPushButton('Acquire')
@@ -62,7 +62,7 @@ class OphydDataResourcePlugin(DataResourcePlugin):
 
     def __init__(self, host=None, user=None, password=None, path=''):
         scheme = 'sftp'
-        self.config = {'scheme': scheme, 'host': 'ptGreyInstrument', 'path': path, 'user': user, 'password': password}
+        self.config = {'scheme': scheme, 'host': 'ALS:701:', 'path': path, 'user': user, 'password': password}
         super(OphydDataResourcePlugin, self).__init__(**self.config)
 
         self.RE = RunEngine()
@@ -75,10 +75,11 @@ class OphydDataResourcePlugin(DataResourcePlugin):
             pool_max_buffers = None
 
         class Detector(areadetector.SimDetector):
-            image1 = areadetector.Component(IP, 'image1:', read_attrs=['image'])
+            image1 = areadetector.Component(IP, 'image1:')
             cam = areadetector.Component(SC, 'cam1:')
 
         instrument = Detector(pvname, name=pvname, read_attrs=['image1'])
+        instrument.image1.shaped_image.kind = 'normal'
 
         docs = {'start': [],
                 'descriptor': [],
