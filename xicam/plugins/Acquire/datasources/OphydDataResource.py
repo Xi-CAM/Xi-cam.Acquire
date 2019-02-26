@@ -1,13 +1,4 @@
 from xicam.plugins.DataResourcePlugin import DataResourcePlugin
-from urllib import parse
-import pysftp
-import tempfile
-import os
-import stat
-from functools import partial
-from xicam.gui import threads
-from xicam.gui.connections import CredentialDialog
-from qtpy.QtWidgets import *
 from xicam.gui.widgets.dataresourcebrowser import *
 from alsdac import ophyd
 from bluesky import RunEngine
@@ -84,10 +75,10 @@ class OphydDataResourcePlugin(DataResourcePlugin):
             pool_max_buffers = None
 
         class Detector(areadetector.SimDetector):
-            image1 = areadetector.Component(IP, 'image1:')
+            image1 = areadetector.Component(IP, 'image1:', read_attrs=['image'])
             cam = areadetector.Component(SC, 'cam1:')
 
-        instrument = Detector(pvname, name=pvname)
+        instrument = Detector(pvname, name=pvname, read_attrs=['image1'])
 
         docs = {'start': [],
                 'descriptor': [],
