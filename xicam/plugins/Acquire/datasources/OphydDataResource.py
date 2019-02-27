@@ -62,7 +62,7 @@ class OphydDataResourcePlugin(DataResourcePlugin):
 
     def __init__(self, host=None, user=None, password=None, path=''):
         scheme = 'sftp'
-        self.config = {'scheme': scheme, 'host': 'ALS:701:', 'path': path, 'user': user, 'password': password}
+        self.config = {'scheme': scheme, 'host': 'Ophyd', 'path': path, 'user': user, 'password': password}
         super(OphydDataResourcePlugin, self).__init__(**self.config)
 
         self.RE = RunEngine()
