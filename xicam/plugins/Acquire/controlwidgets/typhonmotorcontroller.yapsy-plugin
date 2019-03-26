@@ -1,6 +1,6 @@
 [Core]
-Name = Controls Profiles
-Module = controlsprofiles.py
+Name = typhonmotorcontroller
+Module = typhonmotorcontroller.py
 
 [Documentation]
 Author = Ronald J. Pandolfi

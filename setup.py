@@ -67,7 +67,8 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'pyqode.python', 'typhon'],
+    install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'qscintilla', 'typhon',
+                      'ipykernel!=5.*'],  # ipykernel has faulty releases
 
     setup_requires=[],
 

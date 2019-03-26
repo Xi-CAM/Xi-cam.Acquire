@@ -22,11 +22,9 @@ class AcquirePlugin(GUIPlugin):
 
         self.stages = {'Controls': GUILayout(controlsstack,
                                              left=devicelist,
-                                             lefttop=BCSConnector(),
                                              ),
                        'Scripting': GUILayout(AdvancedPythonWidget(),
-                                              left=devicelist,
-                                              lefttop=BCSConnector()),
+                                              left=devicelist),
                        }
         super(AcquirePlugin, self).__init__()
 
