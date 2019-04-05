@@ -11,6 +11,9 @@ from .pythontools.toolswidget import AdvancedPythonWidget
 from .controlwidgets.BCSConnector import BCSConnector
 from .controlwidgets.devicelist import DeviceList
 
+from .runengine import RE
+
+
 class AcquirePlugin(GUIPlugin):
     name = 'Acquire'
     sigLog = Signal(int, str, str, np.ndarray)
@@ -23,8 +26,8 @@ class AcquirePlugin(GUIPlugin):
         self.stages = {'Controls': GUILayout(controlsstack,
                                              left=devicelist,
                                              ),
-                       'Scripting': GUILayout(AdvancedPythonWidget(),
-                                              left=devicelist),
+                       'Bluesky': GUILayout(AdvancedPythonWidget(),
+                                            left=devicelist),
                        }
         super(AcquirePlugin, self).__init__()
 
