@@ -16,7 +16,8 @@ class DeviceList(QListView):
     def __init__(self):
         super(DeviceList, self).__init__()
 
-        self._model = pluginmanager.getPluginByName('Devices', 'SettingsPlugin').plugin_object.devicesmodel
+        self._model = pluginmanager.getPluginByName('xicam.Acquire.devices',
+                                                    'SettingsPlugin').plugin_object.devicesmodel
         self.setModel(self._model)
 
     # FIXME: device discovery is not officially an element of EPICS's design; early work will add devices explicitly

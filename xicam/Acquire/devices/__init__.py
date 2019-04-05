@@ -26,7 +26,7 @@ class DeviceSettingsPlugin(SettingsPlugin):
         self.widget = QWidget()
         self.widget.setLayout(QHBoxLayout())
         self.listview = QListView()
-        self.devicesmodel = QSettings().value('devices') or QStandardItemModel()
+        self.devicesmodel = QStandardItemModel()
         self.listview.setModel(self.devicesmodel)
 
         self.plugintoolbar = QToolBar()

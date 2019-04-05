@@ -1,5 +1,5 @@
 [Core]
-Name = Devices
+Name = xicam.Acquire.devices
 Module = __init__.py
 
 [Documentation]
