@@ -6,8 +6,10 @@ from pyqode.python import widgets, panels as pypanels, modes as pymodes
 from pyqode.python.backend import server
 from functools import partial
 from xicam.gui.threads import QThreadFuture
-import subprocess
-from appdirs import user_config_dir
+from xicam.plugins import manager as pluginmanager
+from ..runengine import queue, RE
+from appdirs import user_cache_dir
+import importlib.util
 
 class scripteditor(QWidget):
     def __init__(self):
@@ -30,13 +32,25 @@ class scripteditortoolbar(QToolBar):
         self.editor = editor
 
         self.addAction('Run', self.Run)
-        self.addAction('Create Action', self.CreateAction)
+        self.addAction('Save Plan', self.SavePlan)
 
     def Run(self, script=None):
         if not script: script = self.editor.toPlainText()
 
-        self._runthread = QThreadFuture(partial(exec, script))
-        self._runthread.start()
+        plan_path = os.path.join(user_cache_dir(appname='xicam'), 'temp_plan.py')
+
+        with open(plan_path, 'w') as plan_file:
+            plan_file.write(script)
+
+        spec = importlib.util.spec_from_file_location("temp_plan", plan_path)
+        temp_plan = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(temp_plan)
+
+        plan = temp_plan.plan
+
+        # TODO: check if plan is running
+
+        queue.put(plan)
 
 
         # tmpdir = user_config_dir('xicam/tmp')
@@ -54,10 +68,8 @@ class scripteditortoolbar(QToolBar):
         #
         # subprocess.call([sys.executable, tmppath])
 
-
-    def CreateAction(self):
-        p = partial(self.Run, self.editor.toPlainText())
-        self.addAction('Custom Action', p)
+    def SavePlan(self):
+        pluginmanager.getPluginByName('Plans', 'SettingsPlugin').plugin_object.add_plan(self.editor.toPlainText())
 
 
 class scripteditoritem(widgets.PyCodeEditBase):
@@ -112,29 +124,23 @@ class scripteditoritem(widgets.PyCodeEditBase):
         QApplication.instance().aboutToQuit.connect(self.cleanup)  # TODO: use this approach in Xi-cam
 
         # self.file.open('test.py')
-        self.insertPlainText('''
-# Required to allow controls manipulation in background
-import asyncio
-# Setup RunEngine
-from bluesky import RunEngine
-from bluesky.plans import scan
+        self.insertPlainText('''from bluesky.plans import scan
 from ophyd.sim import det4, motor1, motor2, motor3
+from pyqtgraph.parametertree.parameterTypes import SimpleParameter
+from xicam.gui.utils import parameterize
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
+min1 = SimpleParameter(name='Axis 1 Min', type='float')
+min2 = SimpleParameter(name='Axis 2 Min', type='float')
+max2 = SimpleParameter(name='Axis 2 Max', type='float')
+max1 = SimpleParameter(name='Axis 1 Max', type='float')
+steps = SimpleParameter(name='Steps', type='int')
 
-RE = RunEngine({}, context_managers=[], loop=loop)
+scan = parameterize(scan)
 
-# Set up simulated hardware.
-
-# The 'det4' example detector a 2D Gaussian function of motor1, motor2.
-
-# Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
-RE(scan([det4],
-        motor1, 1, 5,
-        motor2, 10, 50,
-        5),
-   print)
+plan = scan([det4],
+            motor1, min1, max1,
+            motor2, min2, max2,
+            steps)
 
 ''')
 

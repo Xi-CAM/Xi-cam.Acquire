@@ -1,9 +1,7 @@
-from qtpy.QtGui import *
 from qtpy.QtCore import *
 from qtpy.QtWidgets import *
 from qtpy.uic import loadUi
 import pyqtgraph as pg
-from functools import partial
 import os
 
 from . import simplewidgets

@@ -11,7 +11,7 @@ class AdvancedPythonWidget(QTabWidget):
         self.scripteditor = scripteditor()
 
         self.addTab(self.ipythonconsole, 'IPython')
-        self.addTab(self.scripteditor, 'Script Editor')
+        self.addTab(self.scripteditor, 'Plan Editor')
 
     def __getattr__(self, attr):  ## implicitly wrap methods from children
         for widget in [self.ipythonconsole, self.scripteditor]:
