@@ -4,10 +4,9 @@ from alsdac import ophyd
 from bluesky import RunEngine
 from bluesky.plans import count
 from xicam.core.data import NonDBHeader
-from xicam.gui import threads
 from ophyd import areadetector
 
-from xicam.core import msg
+from xicam.core import msg, threads
 
 
 class DataResourceAcquireView(QWidget):
