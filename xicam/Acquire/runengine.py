@@ -1,10 +1,8 @@
-from bluesky.callbacks.best_effort import BestEffortCallback
-from xicam.core import msg
+from xicam.core import msg, threads
 from functools import partial
 from bluesky import RunEngine, Msg
 import asyncio
 from qtpy import QtCore
-from xicam.gui import threads
 from bluesky.preprocessors import subs_wrapper
 
 
