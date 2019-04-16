@@ -1,13 +1,10 @@
-import os, sys
-import stat
+import os
 from qtpy.QtWidgets import *
 from pyqode.core import panels, api, modes
 from pyqode.python import widgets, panels as pypanels, modes as pymodes
 from pyqode.python.backend import server
-from functools import partial
-from xicam.gui.threads import QThreadFuture
 from xicam.plugins import manager as pluginmanager
-from ..runengine import queue, RE
+from ..runengine import queue
 from appdirs import user_cache_dir
 import importlib.util
 

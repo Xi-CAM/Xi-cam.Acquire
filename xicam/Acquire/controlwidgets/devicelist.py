@@ -1,14 +1,8 @@
 from qtpy.QtWidgets import *
-from qtpy.QtGui import *
 from qtpy.QtCore import *
 
-from alsdac import ophyd as alsophyd
-import ophyd
-from ophyd.utils.epics_pvs import BadPVName
-from xicam.core import msg
-from xicam.gui import threads
 from xicam.plugins import manager as pluginmanager
-from ..devices import Device
+
 
 class DeviceList(QListView):
     sigShowControl = Signal(QWidget)
