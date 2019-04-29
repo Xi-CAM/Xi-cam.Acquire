@@ -1,12 +1,12 @@
-import os
+
 from qtpy.QtWidgets import *
 from pyqode.core import panels, api, modes
 from pyqode.python import widgets, panels as pypanels, modes as pymodes
 from pyqode.python.backend import server
 from xicam.plugins import manager as pluginmanager
-from ..runengine import queue
-from appdirs import user_cache_dir
-import importlib.util
+from ..runengine import RE
+from ..plans.planitem import PlanItem
+
 
 class scripteditor(QWidget):
     def __init__(self):
@@ -34,20 +34,10 @@ class scripteditortoolbar(QToolBar):
     def Run(self, script=None):
         if not script: script = self.editor.toPlainText()
 
-        plan_path = os.path.join(user_cache_dir(appname='xicam'), 'temp_plan.py')
+        planitem = PlanItem('Temp', '', '', script)
+        plan = planitem.plan
 
-        with open(plan_path, 'w') as plan_file:
-            plan_file.write(script)
-
-        spec = importlib.util.spec_from_file_location("temp_plan", plan_path)
-        temp_plan = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(temp_plan)
-
-        plan = temp_plan.plan
-
-        # TODO: check if plan is running
-
-        queue.put(plan)
+        RE.put(plan)
 
 
         # tmpdir = user_config_dir('xicam/tmp')
@@ -66,7 +56,8 @@ class scripteditortoolbar(QToolBar):
         # subprocess.call([sys.executable, tmppath])
 
     def SavePlan(self):
-        pluginmanager.getPluginByName('Plans', 'SettingsPlugin').plugin_object.add_plan(self.editor.toPlainText())
+        pluginmanager.getPluginByName('xicam.Acquire.plans', 'SettingsPlugin').plugin_object.add_plan(
+            self.editor.toPlainText())
 
 
 class scripteditoritem(widgets.PyCodeEditBase):
@@ -124,7 +115,7 @@ class scripteditoritem(widgets.PyCodeEditBase):
         self.insertPlainText('''from bluesky.plans import scan
 from ophyd.sim import det4, motor1, motor2, motor3
 from pyqtgraph.parametertree.parameterTypes import SimpleParameter
-from xicam.gui.utils import parameterize
+from xicam.gui.utils import ParameterizablePlan
 
 min1 = SimpleParameter(name='Axis 1 Min', type='float')
 min2 = SimpleParameter(name='Axis 2 Min', type='float')
@@ -132,7 +123,7 @@ max2 = SimpleParameter(name='Axis 2 Max', type='float')
 max1 = SimpleParameter(name='Axis 1 Max', type='float')
 steps = SimpleParameter(name='Steps', type='int')
 
-scan = parameterize(scan)
+scan = ParameterizablePlan(scan)
 
 plan = scan([det4],
             motor1, min1, max1,
