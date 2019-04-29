@@ -5,7 +5,7 @@ from xicam.gui.static import path
 
 from xicam.plugins import SettingsPlugin, manager
 from xicam.plugins import manager as pluginmanager
-from .plan import Plan
+from .planitem import PlanItem
 
 from ophyd.sim import SynAxis
 
@@ -38,6 +38,8 @@ class PlanSettingsPlugin(SettingsPlugin):
                                                  'Plans',
                                                  self.widget)
 
+        self.restore()
+
     def add_plan(self, code=''):
         """
         Open the plan connect dialog
@@ -53,29 +55,31 @@ class PlanSettingsPlugin(SettingsPlugin):
         if self.listview.selectedIndexes():
             self.plansmodel.removeRow(self.listview.selectedIndexes()[0].row())
 
-    def _add_plan(self, plan: Plan):
-        item = PlanItem(plan)
+    def _add_plan(self, plan: PlanItem, save=True):
+        item = QStandardItem(plan.name)
+        item.setData(plan, Qt.UserRole)
         self.plansmodel.appendRow(item)
         self.plansmodel.dataChanged.emit(item.index(), item.index())
+        if save:
+            self.save()
 
     def toState(self):
-        return [plan.__reduce__()[1] for plan in self.plans]
+        return self.plans
 
     def fromState(self, state):
         self.plansmodel.clear()
         if state:
             for plan in state:
-                item = PlanItem(Plan(*plan))
-                self.plansmodel.appendRow(item)
+                self._add_plan(plan, save=False)
             self.listview.reset()
 
     @property
     def plans(self):
-        return [self.plansmodel.item(i).plan for i in range(self.plansmodel.rowCount())]
+        return [self.plansmodel.item(i).data(Qt.UserRole) for i in range(self.plansmodel.rowCount())]
 
 
 class PlanDialog(QDialog):
-    sigAddPlan = Signal(Plan)
+    sigAddPlan = Signal(PlanItem)
     sigConnect = Signal(str)
 
     def __init__(self, code=''):
@@ -124,7 +128,7 @@ class PlanDialog(QDialog):
         self.setModal(True)
 
     def add(self):
-        self.sigAddPlan.emit(Plan(self.name.text(), self.icon.text(), self.params.text(), self.code.toPlainText()))
+        self.sigAddPlan.emit(PlanItem(self.name.text(), self.icon.text(), self.params.text(), self.code.toPlainText()))
         self.accept()
 
     def simulate(self):
@@ -150,17 +154,3 @@ class PlanDelegate(QItemDelegate):
 
             self._parent.setIndexWidget(index, button)
 
-
-class PlanItem(QStandardItem):
-    def __init__(self, plan: Plan):
-        super(PlanItem, self).__init__(plan.name)
-        self.plan = plan
-        self._widget = None
-
-    @property
-    def widget(self):
-        if not self._widget:
-            controllername = self.plan.controller
-            controllerclass = pluginmanager.getPluginByName(controllername, 'ControllerPlugin').plugin_object
-            self._widget = controllerclass(self.plan)
-        return self._widget
