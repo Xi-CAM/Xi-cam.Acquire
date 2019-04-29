@@ -7,9 +7,10 @@ from xicam.core import msg
 from xicam.core.data import load_header, NonDBHeader
 
 from xicam.plugins import GUIPlugin, GUILayout, manager as pluginmanager
-from .pythontools.toolswidget import AdvancedPythonWidget
+from .pythontools.editor import scripteditor
 from .controlwidgets.BCSConnector import BCSConnector
 from .controlwidgets.devicelist import DeviceList
+from .controlwidgets import RunEngineWidget
 
 from .runengine import RE
 
@@ -24,10 +25,11 @@ class AcquirePlugin(GUIPlugin):
         devicelist.sigShowControl.connect(controlsstack.addSetWidget)
 
         self.stages = {'Controls': GUILayout(controlsstack,
-                                             left=devicelist,
-                                             ),
-                       'Bluesky': GUILayout(AdvancedPythonWidget(),
-                                            left=devicelist),
+                                             left=devicelist, ),
+                       'Plans': GUILayout(scripteditor(),
+                                          left=devicelist),
+                       'Run Engine': GUILayout(RunEngineWidget(),
+                                               left=devicelist)
                        }
         super(AcquirePlugin, self).__init__()
 

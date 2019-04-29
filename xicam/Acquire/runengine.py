@@ -3,11 +3,8 @@ from functools import partial
 from bluesky import RunEngine, Msg
 import asyncio
 from qtpy import QtCore
+from qtpy.QtCore import QObject, Signal
 from bluesky.preprocessors import subs_wrapper
-
-
-class Teleporter(QtCore.QObject):
-    name_doc = QtCore.Signal(str, dict)
 
 
 def _get_asyncio_queue(loop):
@@ -40,45 +37,58 @@ def _get_asyncio_queue(loop):
     return AsyncioQueue
 
 
-def spawn_RE(*, loop=None, **kwargs):
-    RE = RunEngine(context_managers=[], **kwargs)
-    queue = _get_asyncio_queue(RE.loop)()
-    t = Teleporter()
+class QRunEngine(QObject):
+    sigDocumentYield = Signal(str, dict)
+    sigAborted = Signal()  # TODO: wireup me
+    sigException = Signal()
+    sigFinish = Signal()
+    sigStart = Signal()
 
-    async def get_next_message(msg):
-        return await queue.async_get()
+    def __init__(self, **kwargs):
+        super(QRunEngine, self).__init__()
 
-    RE.register_command('next_plan', get_next_message)
+        self.RE = RunEngine(context_managers=[], **kwargs)
+        self.queue = _get_asyncio_queue(self.RE.loop)()
+        self.is_running = False
 
-    def forever_plan():
+        self.RE.register_command('next_plan', self._get_next_message)
+
+        self.threadfuture = threads.QThreadFuture(method=self._thread_task,
+                                                  threadkey='RE',
+                                                  showBusy=False)
+        self.RE.subscribe(self.sigDocumentYield.emit)
+        self.threadfuture.start()
+
+    def _thread_task(self):
+        self.RE(self._forever_plan())
+
+    def _forever_plan(self):
         while True:
             plan = yield Msg('next_plan')
+            self.is_running = True
+            self.sigStart.emit()
             try:
                 yield from plan
             except GeneratorExit:
                 raise
             except Exception as ex:
-                print(f'things went sideways \n{ex}')
+                msg.showMessage('Exception in RunEngine:', level=msg.ERROR)
+                msg.logError(ex)
+            finally:
+                self.sigFinish.emit()
+                self.is_running = False
 
-    def thread_task():
-        RE(forever_plan())
+    async def _get_next_message(self, msg):
+        return await self.queue.async_get()
 
-    threadfuture = threads.QThreadFuture(method=thread_task,
-                                         threadkey='RE',
-                                         showBusy=False)
-    RE.subscribe(t.name_doc.emit)
-    threadfuture.start()
+    def abort(self, reason=''):
+        self.RE.abort(reason=reason)
 
-    return RE, queue, threadfuture, t
-
-
-def queue_and_sub(plan, sub):
-    queue.put(subs_wrapper(plan, partial(threads.invoke_in_main_thread, sub)))
+    def put(self, plan, sub=None):
+        if sub:
+            plan = subs_wrapper(plan, partial(threads.invoke_in_main_thread, sub))
+        self.queue.put(plan)
 
 
-RE, queue, thread, teleporter = spawn_RE(md={'location': 'server'})
-# bec = BestEffortCallback()
-# bec.disable_plots()
-# RE.subscribe(bec)
-
-teleporter.name_doc.connect(partial(msg.logMessage, level=msg.DEBUG))
+RE = QRunEngine()
+RE.sigDocumentYield.connect(partial(msg.logMessage, level=msg.DEBUG))
