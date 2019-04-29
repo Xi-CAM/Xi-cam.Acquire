@@ -13,7 +13,7 @@ from xicam.plugins import manager as pluginmanager
 from .device import Device
 
 from ophyd import EpicsMotor
-from ophyd.sim import SynAxis
+
 
 
 class DeviceSettingsPlugin(SettingsPlugin):
@@ -42,6 +42,7 @@ class DeviceSettingsPlugin(SettingsPlugin):
         super(DeviceSettingsPlugin, self).__init__(QIcon(str(path('icons/controlpanel.png'))),
                                                    'Devices',
                                                    self.widget)
+        self.restore()
 
     def add_device(self):
         """
@@ -102,7 +103,7 @@ class DeviceDialog(QDialog):
 
         # TODO: add controller plugin
         # Temporary hard coded values
-        self.controller.addItem('typhonmotorcontroller')
+        self.controller.addItem('xicam.Acquire.controlwidgets.typhonmotorcontroller')
 
         # Setup dialog buttons
         self.addButton = QPushButton("&Add")
@@ -147,7 +148,8 @@ class DeviceDialog(QDialog):
 
     def add(self):
         self.sigAddDevice.emit(
-            Device(self.name.text(), self.devicestring.text(), self.controller.currentText(), SynAxis))  # EpicsMotor))
+            Device(self.name.text(), self.devicestring.text(), self.controller.currentText(),
+                   EpicsMotor))  # EpicsMotor)) # SynAxis
         self.accept()
 
     def connect(self):
