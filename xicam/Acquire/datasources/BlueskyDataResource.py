@@ -2,14 +2,15 @@ from xicam.plugins.DataResourcePlugin import DataResourcePlugin
 from xicam.gui.widgets.dataresourcebrowser import *
 from xicam.plugins import manager as pluginmanager
 from xicam.core.data import NonDBHeader
-from ..runengine import queue_and_sub
-
+from ..runengine import RE
+from ..plans.planitem import PlanItem
+from xicam.gui.utils import ParameterDialog
 
 class BlueskyDataResourceModel(QObject):
-    def __init__(self, dataresource):
-        super(BlueskyDataResourceModel, self).__init__()
-        self.dataresource = dataresource
-
+    def __new__(cls, datasource):
+        model = pluginmanager.getPluginByName('xicam.Acquire.plans', "SettingsPlugin").plugin_object.plansmodel
+        model.dataresource = datasource
+        return model
 
 class BlueskyDataResourceView(DataResourceList):
     sigOpen = Signal(NonDBHeader)
@@ -30,11 +31,35 @@ class BlueskyDataResourceController(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(view)
 
+        self.runbutton = QPushButton('Run!')
+        self.layout().addWidget(self.runbutton)
+        self.runbutton.clicked.connect(self.openplan)
+
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+    def openplan(self):
+        item = self.view.model.itemFromIndex(self.view.selectionModel().currentIndex())
+        planitem = item.data(Qt.UserRole)
+
+        # Ask for parameters
+        ParameterDialog(planitem.parameter).exec_()
+
+        self.sigOpen.emit(self.view.model.dataresource.pull(planitem))
+
 
 class BlueskyDataResourcePlugin(DataResourcePlugin):
-    model = pluginmanager.getPluginByName('xicam.Acquire.plans', "SettingsPlugin").plugin_object.plansmodel
+    model = BlueskyDataResourceModel
     view = BlueskyDataResourceView
     controller = BlueskyDataResourceController
+    name = 'Plans'
 
-    def pull(self, plan):
-        queue_and_sub(plan, self.view.sigOpen(NonDBHeader))
+    def __init__(self, flags: dict = None, **config):
+        config['host'] = ''
+        super(BlueskyDataResourcePlugin, self).__init__(flags, **config)
+
+    def pull(self, planitem: PlanItem):
+        header = NonDBHeader()
+
+        planitem.run(lambda doctype, doc: header.append(doctype, doc))
+
+        return header

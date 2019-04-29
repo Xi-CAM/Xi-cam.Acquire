@@ -58,9 +58,10 @@ class OphydDataResourcePlugin(DataResourcePlugin):
     model = DataResourceAcquireModel
     view = DataResourceAcquireView
     controller = DataResourceController
+    name = 'Ophyd'
 
     def __init__(self, host=None, user=None, password=None, path=''):
-        scheme = 'sftp'
+        scheme = 'ophyd'
         self.config = {'scheme': scheme, 'host': 'Ophyd', 'path': path, 'user': user, 'password': password}
         super(OphydDataResourcePlugin, self).__init__(**self.config)
 
