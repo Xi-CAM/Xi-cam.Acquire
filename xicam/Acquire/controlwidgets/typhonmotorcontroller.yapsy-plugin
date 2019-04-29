@@ -1,5 +1,5 @@
 [Core]
-Name = typhonmotorcontroller
+Name = xicam.Acquire.controlwidgets.typhonmotorcontroller
 Module = typhonmotorcontroller.py
 
 [Documentation]
