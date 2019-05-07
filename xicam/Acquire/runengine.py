@@ -5,6 +5,7 @@ import asyncio
 from qtpy import QtCore
 from qtpy.QtCore import QObject, Signal
 from bluesky.preprocessors import subs_wrapper
+import traceback
 
 
 def _get_asyncio_queue(loop):
@@ -48,46 +49,26 @@ class QRunEngine(QObject):
         super(QRunEngine, self).__init__()
 
         self.RE = RunEngine(context_managers=[], **kwargs)
-        self.queue = _get_asyncio_queue(self.RE.loop)()
-        self.is_running = False
-
-        self.RE.register_command('next_plan', self._get_next_message)
-
-        self.threadfuture = threads.QThreadFuture(method=self._thread_task,
-                                                  threadkey='RE',
-                                                  showBusy=False)
         self.RE.subscribe(self.sigDocumentYield.emit)
+
+    def __call__(self, *args, **kwargs):
+        print('state:', self.RE.state)
+        if not self.isIdle:
+            self.RE.abort()
+            self.RE.reset()
+            self.threadfuture.wait()
+
+        self.threadfuture = threads.QThreadFuture(self.RE, *args, **kwargs, threadkey='RE', showBusy=True)
         self.threadfuture.start()
 
-    def _thread_task(self):
-        self.RE(self._forever_plan())
+    @property
+    def isIdle(self):
+        return self.RE.state == 'idle'
 
-    def _forever_plan(self):
-        while True:
-            plan = yield Msg('next_plan')
-            self.is_running = True
-            self.sigStart.emit()
-            try:
-                yield from plan
-            except GeneratorExit:
-                raise
-            except Exception as ex:
-                msg.showMessage('Exception in RunEngine:', level=msg.ERROR)
-                msg.logError(ex)
-            finally:
-                self.sigFinish.emit()
-                self.is_running = False
-
-    async def _get_next_message(self, msg):
-        return await self.queue.async_get()
 
     def abort(self, reason=''):
         self.RE.abort(reason=reason)
 
-    def put(self, plan, sub=None):
-        if sub:
-            plan = subs_wrapper(plan, partial(threads.invoke_in_main_thread, sub))
-        self.queue.put(plan)
 
 
 RE = QRunEngine()
