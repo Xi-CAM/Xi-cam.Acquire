@@ -6,6 +6,7 @@ from pyqtgraph.parametertree import ParameterTree, parameterTypes
 from xicam.gui.widgets.metadataview import MetadataWidget
 from functools import partial
 from xicam.core import threads
+from xicam.Acquire.runengine import RE
 
 empty_parameter = parameterTypes.GroupParameter(name='No parameters')
 
@@ -25,7 +26,13 @@ class RunEngineWidget(QWidget):
 
         self.metadata = MetadataWidget()
 
-        self.runbutton = QPushButton('Run!')
+        self.runbutton = QPushButton('Run')
+        self.pausebutton = QPushButton('Pause')
+        self.resumebutton = QPushButton('Resume')
+        self.abortbutton = QPushButton('Abort')
+        self.abortbutton.setStyleSheet('background-color:red;color:white;font-weight:bold;')
+        self._resumed()
+        self._finished()
 
         # Layout
         self.layout = QVBoxLayout()
@@ -40,6 +47,9 @@ class RunEngineWidget(QWidget):
         self.runlayout.setContentsMargins(0, 0, 0, 0)
         self.runlayout.addWidget(self.parameterview)
         self.runlayout.addWidget(self.runbutton)
+        self.runlayout.addWidget(self.pausebutton)
+        self.runlayout.addWidget(self.resumebutton)
+        self.runlayout.addWidget(self.abortbutton)
         self.runwidget.setLayout(self.runlayout)
         self.splitter.addWidget(self.runwidget)
         self.splitter.addWidget(self.metadata)
@@ -47,6 +57,14 @@ class RunEngineWidget(QWidget):
         # Wireup signals
         self.selectionmodel.currentChanged.connect(self.showPlan)
         self.runbutton.clicked.connect(self.run)
+        self.abortbutton.clicked.connect(self.abort)
+        self.pausebutton.clicked.connect(self.pause)
+        self.resumebutton.clicked.connect(self.resume)
+        RE.sigPause.connect(self._paused)
+        RE.sigResume.connect(self._resumed)
+        RE.sigFinish.connect(self._finished)
+        RE.sigStart.connect(self._started)
+        RE.sigAbort.connect(self._aborted)
 
         # Run model
         self.runmodel = QStandardItemModel()
@@ -61,6 +79,37 @@ class RunEngineWidget(QWidget):
         planitem = self.plansmodel.itemFromIndex(self.selectionmodel.currentIndex()).data(Qt.UserRole)
 
         planitem.run(callback=partial(threads.invoke_in_main_thread, self.metadata.doc_consumer, force_event=True))
+
+    def abort(self):
+        RE.abort('Aborted by Xi-cam user.')
+
+    def pause(self):
+        RE.pause()
+
+    def resume(self):
+        RE.resume()
+        self.resumebutton.setEnabled(False)
+
+    def _resumed(self):
+        self.resumebutton.setVisible(False)
+        self.resumebutton.setEnabled(True)
+        self.pausebutton.setVisible(True)
+
+    def _paused(self):
+        self.resumebutton.setVisible(True)
+        self.pausebutton.setVisible(False)
+
+    def _started(self):
+        self.abortbutton.setEnabled(True)
+        self.pausebutton.setEnabled(True)
+        self._resumed()
+
+    def _finished(self):
+        self.abortbutton.setEnabled(False)
+        self.pausebutton.setEnabled(False)
+
+    def _aborted(self):
+        self._finished()
 
 
 class MDVWithButtons(QWidget):

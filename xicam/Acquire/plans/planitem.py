@@ -27,7 +27,7 @@ class PlanItem(object):
 
     @property
     def parameter(self):
-        return self.plan.parameter
+        return getattr(self.plan, 'parameter', None)
 
     def __reduce__(self):
         return PlanItem, (self.name, self.icon, self.params, self.code)

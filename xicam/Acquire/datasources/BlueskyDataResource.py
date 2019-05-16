@@ -42,7 +42,8 @@ class BlueskyDataResourceController(QWidget):
         planitem = item.data(Qt.UserRole)
 
         # Ask for parameters
-        ParameterDialog(planitem.parameter).exec_()
+        param = planitem.parameter
+        if param: ParameterDialog(param).exec_()
 
         self.sigOpen.emit(self.view.model.dataresource.pull(planitem))
 

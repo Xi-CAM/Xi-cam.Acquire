@@ -40,10 +40,12 @@ def _get_asyncio_queue(loop):
 
 class QRunEngine(QObject):
     sigDocumentYield = Signal(str, dict)
-    sigAborted = Signal()  # TODO: wireup me
+    sigAbort = Signal()  # TODO: wireup me
     sigException = Signal()
     sigFinish = Signal()
     sigStart = Signal()
+    sigPause = Signal()
+    sigResume = Signal()
 
     def __init__(self, **kwargs):
         super(QRunEngine, self).__init__()
@@ -52,22 +54,42 @@ class QRunEngine(QObject):
         self.RE.subscribe(self.sigDocumentYield.emit)
 
     def __call__(self, *args, **kwargs):
-        print('state:', self.RE.state)
         if not self.isIdle:
+            # TODO: run confirm callback
             self.RE.abort()
             self.RE.reset()
             self.threadfuture.wait()
 
-        self.threadfuture = threads.QThreadFuture(self.RE, *args, **kwargs, threadkey='RE', showBusy=True)
+        self.threadfuture = threads.QThreadFuture(self.RE, *args, **kwargs,
+                                                  threadkey='RE',
+                                                  showBusy=True,
+                                                  finished_slot=self.sigFinish.emit)
         self.threadfuture.start()
+        self.sigStart.emit()
 
     @property
     def isIdle(self):
         return self.RE.state == 'idle'
 
-
     def abort(self, reason=''):
-        self.RE.abort(reason=reason)
+        if self.RE.state != 'idle':
+            self.RE.abort(reason=reason)
+            self.sigAbort.emit()
+
+    def pause(self, defer=False):
+        if self.RE.state != 'paused':
+            self.RE.request_pause(defer)
+            self.sigPause.emit()
+
+    def resume(self, ):
+        if self.RE.state == 'paused':
+            self.threadfuture = threads.QThreadFuture(self.RE.resume,
+                                                      threadkey='RE',
+                                                      showBusy=True,
+                                                      finished_slot=self.sigFinish.emit)
+            self.threadfuture.start()
+            self.sigResume.emit()
+
 
 
 
