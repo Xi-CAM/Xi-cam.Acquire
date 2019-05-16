@@ -11,9 +11,9 @@ from xicam.plugins import cammart
 from collections import namedtuple
 from xicam.plugins import manager as pluginmanager
 from .device import Device
+from .areadetector import AreaDetector
 
 from ophyd import EpicsMotor
-
 
 
 class DeviceSettingsPlugin(SettingsPlugin):
@@ -84,6 +84,8 @@ class DeviceDialog(QDialog):
     sigAddDevice = Signal(Device)
     sigConnect = Signal(str)
 
+    deviceclasses = {'Epics Motor': EpicsMotor, 'Area Detector': AreaDetector}
+
     def __init__(self):
         super(DeviceDialog, self).__init__()
 
@@ -100,10 +102,14 @@ class DeviceDialog(QDialog):
         self.name = QLineEdit()
         self.devicestring = QLineEdit()
         self.controller = QComboBox()
+        self.deviceclass = QComboBox()
+        for name in self.deviceclasses:
+            self.deviceclass.addItem(name)
 
         # TODO: add controller plugin
         # Temporary hard coded values
-        self.controller.addItem('xicam.Acquire.controlwidgets.typhonmotorcontroller')
+        for plugin in pluginmanager.getPluginsOfCategory('ControllerPlugin'):
+            self.controller.addItem(plugin.name)
 
         # Setup dialog buttons
         self.addButton = QPushButton("&Add")
@@ -126,6 +132,7 @@ class DeviceDialog(QDialog):
         mainLayout.addRow('Device Name', self.name)
         mainLayout.addRow('Device PV', self.devicestring)
         mainLayout.addRow('Controller Type', self.controller)
+        mainLayout.addRow('Device Class', self.deviceclass)
         mainLayout.addRow(self.buttonboxWidget)
 
         self.setLayout(mainLayout)
@@ -149,7 +156,7 @@ class DeviceDialog(QDialog):
     def add(self):
         self.sigAddDevice.emit(
             Device(self.name.text(), self.devicestring.text(), self.controller.currentText(),
-                   EpicsMotor))  # EpicsMotor)) # SynAxis
+                   self.deviceclasses[self.deviceclass.currentText()]))  # EpicsMotor)) # SynAxis
         self.accept()
 
     def connect(self):

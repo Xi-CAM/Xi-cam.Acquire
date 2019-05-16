@@ -33,7 +33,9 @@ class DataResourceAcquireView(QWidget):
         self.sigOpen.emit(self.model.dataresource.pull(self.PVname.text()))
 
     def liveacquire(self):
-        self.model.dataresource.stream_to(self.sigOpen.emit(self.PVname.text()))
+        streaming_header = NonDBHeader()
+        self.sigOpen.emit(self.PVname.text())
+        self.model.dataresource.stream_to()
 
 
 class DataResourceAcquireModel(QObject):
