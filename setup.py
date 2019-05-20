@@ -68,7 +68,9 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'qscintilla', 'typhon',
-                      'ipykernel!=5.0*,!=5.1.0', 'pyqode.python'  # ipykernel has faulty releases
+                      'ipykernel!=5.0*,!=5.1.0', 'pyqode.python', 'typhon', 'pydm',
+                      'git+https://github.com/slaclab/timechart.git',
+                      'git+https://github.com/pcdshub/happi.git'  # ipykernel has faulty releases
                       ],
 
     setup_requires=[],
