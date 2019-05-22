@@ -11,9 +11,9 @@ from xicam.plugins import cammart
 from collections import namedtuple
 from xicam.plugins import manager as pluginmanager
 from .device import Device
-from .areadetector import AreaDetector
+from .areadetector import AreaDetector, PilatusDetector
 
-from ophyd import EpicsMotor, PilatusDetector
+from ophyd import EpicsMotor
 
 
 class DeviceSettingsPlugin(SettingsPlugin):
