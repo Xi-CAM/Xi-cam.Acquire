@@ -13,7 +13,7 @@ from xicam.plugins import manager as pluginmanager
 from .device import Device
 from .areadetector import AreaDetector
 
-from ophyd import EpicsMotor
+from ophyd import EpicsMotor, PilatusDetector
 
 
 class DeviceSettingsPlugin(SettingsPlugin):
@@ -84,7 +84,8 @@ class DeviceDialog(QDialog):
     sigAddDevice = Signal(Device)
     sigConnect = Signal(str)
 
-    deviceclasses = {'Epics Motor': EpicsMotor, 'Area Detector': AreaDetector}
+    deviceclasses = {'Epics Motor': EpicsMotor, 'Simple Area Detector (Generic)': AreaDetector,
+                     'Pilatus Detector': PilatusDetector}
 
     def __init__(self):
         super(DeviceDialog, self).__init__()
