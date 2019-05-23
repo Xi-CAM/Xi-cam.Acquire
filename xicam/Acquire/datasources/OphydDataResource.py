@@ -1,6 +1,6 @@
 from xicam.plugins.DataResourcePlugin import DataResourcePlugin
 from xicam.gui.widgets.dataresourcebrowser import *
-from alsdac import ophyd
+# from alsdac import ophyd
 from bluesky import RunEngine
 from bluesky.plans import count
 from xicam.core.data import NonDBHeader
