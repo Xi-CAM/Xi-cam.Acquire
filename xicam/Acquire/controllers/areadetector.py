@@ -7,6 +7,7 @@ from qtpy.QtCore import QTimer
 from xicam.core import threads
 from xicam.plugins import ControllerPlugin
 from functools import partial
+from xicam.core import msg
 
 
 class AreaDetectorController(ControllerPlugin):
@@ -18,6 +19,8 @@ class AreaDetectorController(ControllerPlugin):
         self.setLayout(QVBoxLayout())
 
         self.imageview = pg.ImageView()
+        self.error_text = pg.TextItem('')
+        self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
 
         self.thread = None
@@ -36,7 +39,8 @@ class AreaDetectorController(ControllerPlugin):
 
     def update(self):
         self.thread = threads.QThreadFuture(self.getFrame, showBusy=False,
-                                            callback_slot=partial(self.setFrame, autoLevels=self._autolevel))
+                                            callback_slot=partial(self.setFrame, autoLevels=self._autolevel),
+                                            except_slot=self.setError)
         self.thread.start()
 
     def getFrame(self):
@@ -44,6 +48,7 @@ class AreaDetectorController(ControllerPlugin):
 
     def setFrame(self, image, *args, **kwargs):
         self.imageview.imageDisp = None
+        self.error_text.setText('')
         self.imageview.image = image
         # self.imageview.updateImage(autoHistogramRange=kwargs['autoLevels'])
         image = self.imageview.getProcessedImage()
@@ -55,6 +60,10 @@ class AreaDetectorController(ControllerPlugin):
         # self.imageview.setImage(image, *args, **kwargs)
         self._autolevel = False
         self.timer.singleShot(1. / self.maxfps * 1000, self.update)
+
+    def setError(self, exception: Exception):
+        msg.logError(exception)
+        self.error_text.setText('An error occurred while connecting to this device.')
 
 # TODO: add visibility checking
 # not widget.visibleRegion().isEmpty():
