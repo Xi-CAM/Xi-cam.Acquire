@@ -8,6 +8,7 @@ from xicam.core import threads
 from xicam.plugins import ControllerPlugin
 from functools import partial
 from xicam.core import msg
+from xicam.gui.widgets.dynimageview import DynImageView
 import time
 
 class AreaDetectorController(ControllerPlugin):
@@ -18,7 +19,7 @@ class AreaDetectorController(ControllerPlugin):
 
         self.setLayout(QVBoxLayout())
 
-        self.imageview = pg.ImageView()
+        self.imageview = DynImageView()
         self.error_text = pg.TextItem('')
         self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
