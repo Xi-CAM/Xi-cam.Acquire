@@ -8,7 +8,7 @@ from xicam.core import threads
 from xicam.plugins import ControllerPlugin
 from functools import partial
 from xicam.core import msg
-
+import time
 
 class AreaDetectorController(ControllerPlugin):
     def __init__(self, device, maxfps=30):
@@ -36,6 +36,7 @@ class AreaDetectorController(ControllerPlugin):
         # self.rgbLevelsCheck = QCheckBox()
 
         self.timer.singleShot(1. / self.maxfps * 1000, self.update)
+        self._last_timestamp = time.time()
 
     def update(self):
         self.thread = threads.QThreadFuture(self.getFrame, showBusy=False,
@@ -60,6 +61,10 @@ class AreaDetectorController(ControllerPlugin):
 
         # self.imageview.setImage(image, *args, **kwargs)
         self._autolevel = False
+
+        msg.logMessage('fps:', 1. / (time.time() - self._last_timestamp))
+        self._last_timestamp = time.time()
+
         self.timer.singleShot(1. / self.maxfps * 1000, self.update)
 
     def setError(self, exception: Exception):
