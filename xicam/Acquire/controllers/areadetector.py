@@ -44,6 +44,7 @@ class AreaDetectorController(ControllerPlugin):
         self.thread.start()
 
     def getFrame(self):
+        self.device.device_obj.trigger()
         return self.device.device_obj.image1.get().shaped_image
 
     def setFrame(self, image, *args, **kwargs):
