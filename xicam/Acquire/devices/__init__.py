@@ -11,6 +11,7 @@ from xicam.plugins import cammart
 from collections import namedtuple
 from xicam.plugins import manager as pluginmanager
 from .device import Device
+from .fastccd import FastCCD
 from .areadetector import AreaDetector, PilatusDetector
 
 from ophyd import EpicsMotor
@@ -84,7 +85,7 @@ class DeviceDialog(QDialog):
     sigAddDevice = Signal(Device)
     sigConnect = Signal(str)
 
-    deviceclasses = {'Epics Motor': EpicsMotor, 'Simple Area Detector (Generic)': AreaDetector,
+    deviceclasses = {'Fast CCD': FastCCD, 'Epics Motor': EpicsMotor, 'Simple Area Detector (Generic)': AreaDetector,
                      'Pilatus Detector': PilatusDetector}
 
     def __init__(self):
