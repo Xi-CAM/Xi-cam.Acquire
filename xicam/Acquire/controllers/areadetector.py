@@ -14,6 +14,7 @@ import time
 class AreaDetectorController(ControllerPlugin):
     def __init__(self, device, maxfps=30):
         super(AreaDetectorController, self).__init__(device)
+        device.device_obj.read_attrs += ['image1']
         self.maxfps = maxfps
         self._autolevel = True
 
