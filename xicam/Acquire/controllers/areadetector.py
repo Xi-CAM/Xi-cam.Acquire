@@ -21,9 +21,12 @@ class AreaDetectorController(ControllerPlugin):
         self.setLayout(QVBoxLayout())
 
         self.imageview = DynImageView()
+        self.passive = QCheckBox('Passive Mode')
+        self.passive.setChecked(True)
         self.error_text = pg.TextItem('')
         self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
+        self.layout().addWidget(self.passive)
 
         self.thread = None
         self.timer = QTimer()
@@ -47,7 +50,8 @@ class AreaDetectorController(ControllerPlugin):
         self.thread.start()
 
     def getFrame(self):
-        self.device.device_obj.trigger()
+        if not self.passive.isChecked():
+            self.device.device_obj.trigger()
         return self.device.device_obj.image1.get().shaped_image
 
     def setFrame(self, image, *args, **kwargs):
