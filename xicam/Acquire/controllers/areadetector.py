@@ -53,7 +53,7 @@ class AreaDetectorController(ControllerPlugin):
     def getFrame(self):
         if not self.passive.isChecked():
             self.device.device_obj.trigger()
-        return self.device.device_obj.image1.get().shaped_image
+        return self.device.device_obj.image1.shaped_image.get()
 
     def setFrame(self, image, *args, **kwargs):
         self.imageview.imageDisp = None
