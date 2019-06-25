@@ -1,0 +1,10 @@
+[Core]
+Name = xicam.Acquire.controllers.saxsdetector
+Module = saxsdetector.py
+Object = SAXSDetectorController
+
+[Documentation]
+Author = Ronald J. Pandolfi
+Version = 0.1.0
+Website = http://lotsofplugins.com
+Description = My first plugin

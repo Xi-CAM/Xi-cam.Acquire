@@ -12,6 +12,7 @@ from xicam.gui.widgets.dynimageview import DynImageView
 import time
 
 class AreaDetectorController(ControllerPlugin):
+    viewclass = DynImageView
     def __init__(self, device, maxfps=30):
         super(AreaDetectorController, self).__init__(device)
         device.device_obj.read_attrs += ['image1']
@@ -20,7 +21,7 @@ class AreaDetectorController(ControllerPlugin):
 
         self.setLayout(QVBoxLayout())
 
-        self.imageview = DynImageView()
+        self.imageview = self.viewclass()
         self.passive = QCheckBox('Passive Mode')
         self.passive.setChecked(True)
         self.error_text = pg.TextItem('')
