@@ -5,8 +5,21 @@ from bluesky import RunEngine
 from bluesky.plans import count
 from xicam.core.data import NonDBHeader
 from ophyd import areadetector
+from pydm.widgets.line_edit import PyDMLineEdit
+from qtpy.QtWidgets import QFormLayout
 
 from xicam.core import msg, threads
+
+
+class ConfigDialog(QDialog):
+    def __init__(self, pvname):
+        super(ConfigDialog, self).__init__()
+
+        layout = QFormLayout()
+        self.setLayout(layout)
+        layout.addRow('Acquire Time', PyDMLineEdit(f'{pvname}cam:AcquireTime'))
+        layout.addRow('Number of Images', PyDMLineEdit(f'{pvname}cam:NumImages'))
+
 
 
 class DataResourceAcquireView(QWidget):
@@ -29,6 +42,10 @@ class DataResourceAcquireView(QWidget):
         self.livebtn.clicked.connect(self.liveacquire)
         self.layout().addWidget(self.livebtn)
 
+        self.configure = QPushButton('Configure')
+        self.configure.clicked.connect(self.configure)
+        self.layout().addWidget(self.configure)
+
     def acquire(self):
         self.sigOpen.emit(self.model.dataresource.pull(self.PVname.text()))
 
@@ -36,6 +53,10 @@ class DataResourceAcquireView(QWidget):
         streaming_header = NonDBHeader()
         self.sigOpen.emit(self.PVname.text())
         self.model.dataresource.stream_to()
+
+    def configure(self):
+        configdialog = ConfigDialog(self.PVname.text())
+        configdialog.exec_()
 
 
 class DataResourceAcquireModel(QObject):
