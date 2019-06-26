@@ -1,6 +1,6 @@
 from xicam.plugins.DataResourcePlugin import DataResourcePlugin
 from xicam.gui.widgets.dataresourcebrowser import *
-# from alsdac import ophyd
+from xicam.plugins import manager as pluginmanager
 from bluesky import RunEngine
 from bluesky.plans import count
 from xicam.core.data import NonDBHeader
@@ -9,6 +9,13 @@ from pydm.widgets.line_edit import PyDMLineEdit
 from qtpy.QtWidgets import QFormLayout
 
 from xicam.core import msg, threads
+
+
+class OphydDataResourceModel(QObject):
+    def __new__(cls, datasource):
+        model = pluginmanager.getPluginByName('xicam.Acquire.devices', "SettingsPlugin").plugin_object.devicesmodel
+        model.dataresource = datasource
+        return model
 
 
 class ConfigDialog(QDialog):
@@ -21,18 +28,24 @@ class ConfigDialog(QDialog):
         layout.addRow('Number of Images', PyDMLineEdit(f'{pvname}cam:NumImages'))
 
 
-
-class DataResourceAcquireView(QWidget):
+class DataResourceAcquireView(DataResourceList):
     sigOpen = Signal(NonDBHeader)
 
     def __init__(self, model):
-        super(DataResourceAcquireView, self).__init__()
+        super(DataResourceAcquireView, self).__init__(model)
         self.model = model
 
-        self.setLayout(QFormLayout())
 
-        self.PVname = QLineEdit('ALS:701:')
-        self.layout().addWidget(self.PVname)
+class DataResourceController(QWidget):
+    sigOpen = Signal(NonDBHeader)
+    sigPreview = Signal(object)
+
+    def __init__(self, view):
+        super(DataResourceController, self).__init__()
+        self.view = view
+        self.view.sigOpen.connect(self.sigOpen)
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(view)
 
         self.acquirebtn = QPushButton('Acquire')
         self.acquirebtn.clicked.connect(self.acquire)
@@ -47,7 +60,10 @@ class DataResourceAcquireView(QWidget):
         self.layout().addWidget(self.configure)
 
     def acquire(self):
-        self.sigOpen.emit(self.model.dataresource.pull(self.PVname.text()))
+        item = self.view.model.itemFromIndex(self.view.selectionModel().currentIndex())
+        deviceitem = item
+
+        self.sigOpen.emit(self.view.model.dataresource.pull(deviceitem.device))
 
     def liveacquire(self):
         streaming_header = NonDBHeader()
@@ -59,26 +75,8 @@ class DataResourceAcquireView(QWidget):
         configdialog.exec_()
 
 
-class DataResourceAcquireModel(QObject):
-    def __init__(self, dataresource):
-        super(DataResourceAcquireModel, self).__init__()
-        self.dataresource = dataresource
-
-
-class DataResourceController(QWidget):
-    sigOpen = Signal(NonDBHeader)
-    sigPreview = Signal(object)
-
-    def __init__(self, view):
-        super(DataResourceController, self).__init__()
-        self.view = view
-        self.view.sigOpen.connect(self.sigOpen)
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(view)
-
-
 class OphydDataResourcePlugin(DataResourcePlugin):
-    model = DataResourceAcquireModel
+    model = OphydDataResourceModel
     view = DataResourceAcquireView
     controller = DataResourceController
     name = 'Ophyd'
@@ -90,25 +88,22 @@ class OphydDataResourcePlugin(DataResourcePlugin):
 
         self.RE = RunEngine()
 
-    def pull(self, pvname):
-        class SC(areadetector.cam.SimDetectorCam):
-            pool_max_buffers = None
+    def pull(self, deviceitem):
 
-        class IP(areadetector.ImagePlugin):
-            pool_max_buffers = None
-
-        class Detector(areadetector.SimDetector):
-            image1 = areadetector.Component(IP, 'image1:')
-            cam = areadetector.Component(SC, 'cam1:')
-
-        instrument = Detector(pvname, name=pvname, read_attrs=['image1'])
-        instrument.image1.shaped_image.kind = 'normal'
+        # instrument = Detector(pvname, name=pvname, read_attrs=['image1'])
+        # instrument.image1.shaped_image.kind = 'normal'
 
         docs = {'start': [],
                 'descriptor': [],
                 'event': [],
+                'resource': [],
+                'datum': [],
                 'stop': []}
-        self.RE(count([instrument]), lambda doctype, doc: docs[doctype].append(doc))
+        if 'image1' not in deviceitem.device_obj.read_attrs:
+            deviceitem.device_obj.read_attrs.append('image1')
+        if 'shaped_image' not in deviceitem.device_obj.image1.read_attrs:
+            deviceitem.device_obj.image1.read_attrs.append('shaped_image')
+        self.RE(count([deviceitem.device_obj]), lambda doctype, doc: docs[doctype].append(doc))
         return NonDBHeader(docs['start'][0], docs['descriptor'], docs['event'], docs['stop'][0])
 
     @threads.method
