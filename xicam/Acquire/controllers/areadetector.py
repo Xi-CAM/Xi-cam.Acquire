@@ -15,7 +15,6 @@ class AreaDetectorController(ControllerPlugin):
     viewclass = DynImageView
     def __init__(self, device, maxfps=30):
         super(AreaDetectorController, self).__init__(device)
-        device.device_obj.read_attrs += ['image1']
         self.maxfps = maxfps
         self._autolevel = True
 
@@ -51,23 +50,28 @@ class AreaDetectorController(ControllerPlugin):
         self.thread.start()
 
     def getFrame(self):
-        if not self.passive.isChecked():
-            self.device.device_obj.trigger()
-        return self.device.device_obj.image1.shaped_image.get()
+        try:
+            if not self.passive.isChecked():
+                self.device.device_obj.trigger()
+            return self.device.device_obj.image1.shaped_image.get()
+        except RuntimeError as ex:
+            msg.logError(ex)
+        return None
 
     def setFrame(self, image, *args, **kwargs):
-        self.imageview.imageDisp = None
-        self.error_text.setText('')
-        self.imageview.image = image
-        # self.imageview.updateImage(autoHistogramRange=kwargs['autoLevels'])
-        image = self.imageview.getProcessedImage()
-        if kwargs['autoLevels']:
-            self.imageview.ui.histogram.setHistogramRange(self.imageview.levelMin, self.imageview.levelMax)
-            self.imageview.autoLevels()
-        self.imageview.imageItem.updateImage(image)
+        if image is not None:
+            self.imageview.imageDisp = None
+            self.error_text.setText('')
+            self.imageview.image = image
+            # self.imageview.updateImage(autoHistogramRange=kwargs['autoLevels'])
+            image = self.imageview.getProcessedImage()
+            if kwargs['autoLevels']:
+                self.imageview.ui.histogram.setHistogramRange(self.imageview.levelMin, self.imageview.levelMax)
+                self.imageview.autoLevels()
+            self.imageview.imageItem.updateImage(image)
 
-        # self.imageview.setImage(image, *args, **kwargs)
-        self._autolevel = False
+            # self.imageview.setImage(image, *args, **kwargs)
+            self._autolevel = False
 
         msg.logMessage('fps:', 1. / (time.time() - self._last_timestamp))
         self._last_timestamp = time.time()
