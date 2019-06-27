@@ -6,6 +6,8 @@ from bluesky.plans import count
 from xicam.core.data import NonDBHeader
 from ophyd import areadetector
 from pydm.widgets.line_edit import PyDMLineEdit
+from pydm.widgets.enum_combo_box import PyDMEnumComboBox
+from pydm import Display
 from qtpy.QtWidgets import QFormLayout
 
 from xicam.core import msg, threads
@@ -24,8 +26,11 @@ class ConfigDialog(QDialog):
 
         layout = QFormLayout()
         self.setLayout(layout)
-        layout.addRow('Acquire Time', PyDMLineEdit(f'{pvname}cam:AcquireTime'))
-        layout.addRow('Number of Images', PyDMLineEdit(f'{pvname}cam:NumImages'))
+        layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:AcquireTime'))
+        layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
+        layout.addRow('Number of Exposures', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumExposures'))
+        layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:ImageMode'))
+
 
 
 class DataResourceAcquireView(DataResourceList):
@@ -55,14 +60,12 @@ class DataResourceController(QWidget):
         self.livebtn.clicked.connect(self.liveacquire)
         self.layout().addWidget(self.livebtn)
 
-        self.configure = QPushButton('Configure')
-        self.configure.clicked.connect(self.configure)
-        self.layout().addWidget(self.configure)
+        self.configurebtn = QPushButton('Configure')
+        self.configurebtn.clicked.connect(self.configure)
+        self.layout().addWidget(self.configurebtn)
 
     def acquire(self):
-        item = self.view.model.itemFromIndex(self.view.selectionModel().currentIndex())
-        deviceitem = item
-
+        deviceitem = self.view.model.itemFromIndex(self.view.selectionModel().currentIndex())
         self.sigOpen.emit(self.view.model.dataresource.pull(deviceitem.device))
 
     def liveacquire(self):
@@ -71,7 +74,9 @@ class DataResourceController(QWidget):
         self.model.dataresource.stream_to()
 
     def configure(self):
-        configdialog = ConfigDialog(self.PVname.text())
+        deviceitem = self.view.model.itemFromIndex(self.view.selectionModel().currentIndex())
+
+        configdialog = ConfigDialog(deviceitem.device.pvname)
         configdialog.exec_()
 
 
