@@ -2,17 +2,24 @@ import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.ptime as ptime
 from pyqtgraph import GradientWidget
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QCheckBox
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QCheckBox, QGroupBox, QFormLayout, QHBoxLayout, QPushButton
 from qtpy.QtCore import QTimer
 from xicam.core import threads
 from xicam.plugins import ControllerPlugin
 from functools import partial
 from xicam.core import msg
 from xicam.gui.widgets.dynimageview import DynImageView
+from pydm.widgets.line_edit import PyDMLineEdit
+from pydm.widgets.enum_combo_box import PyDMEnumComboBox
+from bluesky.plans import count
+
+from xicam.Acquire.runengine import RE
 import time
+
 
 class AreaDetectorController(ControllerPlugin):
     viewclass = DynImageView
+
     def __init__(self, device, maxfps=30):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
@@ -27,6 +34,29 @@ class AreaDetectorController(ControllerPlugin):
         self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
         self.layout().addWidget(self.passive)
+
+        pvname = device.pvname
+        config_layout = QFormLayout()
+        config_layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:AcquireTime'))
+        config_layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
+        config_layout.addRow('Number of Exposures', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumExposures'))
+        config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:ImageMode'))
+
+        config_panel = QGroupBox('Configuration')
+        config_panel.setLayout(config_layout)
+
+        acquire_layout = QVBoxLayout()
+        acquire_button = QPushButton('Acquire')
+        acquire_button.clicked.connect(self.acquire)
+        acquire_layout.addWidget(acquire_button)
+
+        acquire_panel = QGroupBox('Acquire')
+        acquire_panel.setLayout(acquire_layout)
+
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(config_panel)
+        hlayout.addWidget(acquire_panel)
+        self.layout().addLayout(hlayout)
 
         self.thread = None
         self.timer = QTimer()
@@ -81,6 +111,10 @@ class AreaDetectorController(ControllerPlugin):
     def setError(self, exception: Exception):
         msg.logError(exception)
         self.error_text.setText('An error occurred while connecting to this device.')
+
+    def acquire(self):
+        RE(count([self.device.device_obj]))
+
 
 # TODO: add visibility checking
 # not widget.visibleRegion().isEmpty():
