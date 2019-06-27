@@ -388,6 +388,7 @@ class ProductionCamTriggered(ProductionCamStandard):
 
 
 class StageOnFirstTrigger(ProductionCamTriggered):
+    _default_read_attrs = ['hdf5']
 
     def __init__(self, *args, **kwargs):
         super(StageOnFirstTrigger, self).__init__(*args, **kwargs)
