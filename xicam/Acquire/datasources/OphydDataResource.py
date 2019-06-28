@@ -4,12 +4,10 @@ from xicam.plugins import manager as pluginmanager
 from bluesky import RunEngine
 from bluesky.plans import count
 from xicam.core.data import NonDBHeader
-from ophyd import areadetector
 from pydm.widgets.line_edit import PyDMLineEdit
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
-from pydm import Display
 from qtpy.QtWidgets import QFormLayout
-
+from xicam.Acquire.runengine import RE
 from xicam.core import msg, threads
 
 
@@ -30,6 +28,7 @@ class ConfigDialog(QDialog):
         layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
         layout.addRow('Number of Exposures', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumExposures'))
         layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:ImageMode'))
+        layout.addRow('File Write Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}hdf1:FileWriteMode'))
 
 
 
@@ -104,11 +103,8 @@ class OphydDataResourcePlugin(DataResourcePlugin):
                 'resource': [],
                 'datum': [],
                 'stop': []}
-        if 'image1' not in deviceitem.device_obj.read_attrs:
-            deviceitem.device_obj.read_attrs.append('image1')
-        if 'shaped_image' not in deviceitem.device_obj.image1.read_attrs:
-            deviceitem.device_obj.image1.read_attrs.append('shaped_image')
-        self.RE(count([deviceitem.device_obj]), lambda doctype, doc: docs[doctype].append(doc))
+
+        RE(count([deviceitem.device_obj]), lambda doctype, doc: docs[doctype].append(doc))
         return NonDBHeader(docs['start'][0], docs['descriptor'], docs['event'], docs['stop'][0])
 
     @threads.method
