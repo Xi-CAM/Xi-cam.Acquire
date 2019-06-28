@@ -9,10 +9,12 @@ from xicam.plugins import ControllerPlugin
 from functools import partial
 from xicam.core import msg
 from xicam.gui.widgets.dynimageview import DynImageView
+from caproto._utils import CaprotoTimeoutError
 import time
 
 class AreaDetectorController(ControllerPlugin):
     viewclass = DynImageView
+
     def __init__(self, device, maxfps=30):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
@@ -54,7 +56,7 @@ class AreaDetectorController(ControllerPlugin):
             if not self.passive.isChecked():
                 self.device.device_obj.trigger()
             return self.device.device_obj.image1.shaped_image.get()
-        except RuntimeError as ex:
+        except (RuntimeError, CaprotoTimeoutError) as ex:
             msg.logError(ex)
         return None
 
