@@ -13,6 +13,7 @@ from caproto._utils import CaprotoTimeoutError
 from pydm.widgets.line_edit import PyDMLineEdit
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
 from bluesky.plans import count
+import ophyd
 
 from xicam.Acquire.runengine import RE
 import time
@@ -21,7 +22,7 @@ import time
 class AreaDetectorController(ControllerPlugin):
     viewclass = DynImageView
 
-    def __init__(self, device, maxfps=30):
+    def __init__(self, device, maxfps=10):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
         self._autolevel = True
@@ -60,19 +61,11 @@ class AreaDetectorController(ControllerPlugin):
         self.layout().addLayout(hlayout)
 
         self.thread = None
-        self.timer = QTimer()
-
-        partial(self.imageview.imageItem.setImage, autoLevels=False)
-
-        # WIP
-        # self.lutCheck = QCheckBox()
-        # self.LUT = GradientWidget()
-        # self.downsampleCheck = QCheckBox()
-        # self.scaleCheck = QCheckBox()
-        # self.rgbLevelsCheck = QCheckBox()
-
-        self.timer.singleShot(1. / self.maxfps * 1000, self.update)
         self._last_timestamp = time.time()
+
+        self.device.device_obj.image1.shaped_image.subscribe(partial(threads.invoke_in_main_thread, self.setFrame))
+
+        self.passive.toggled.connect(self.setPassive)
 
     def update(self):
         self.thread = threads.QThreadFuture(self.getFrame, showBusy=False,
@@ -80,34 +73,56 @@ class AreaDetectorController(ControllerPlugin):
                                             except_slot=self.setError)
         self.thread.start()
 
-    def getFrame(self):
-        try:
-            if not self.passive.isChecked():
+    def _trigger_thread(self):
+        while True:
+            while 1. / (time.time() - self._last_timestamp) > self.maxfps:
+                time.sleep(.1)
+
+            if self.passive.isChecked():
+                break
+
+            try:
+                try:
+                    self.device.device_obj.stage()
+                except ophyd.utils.errors.RedundantStaging:
+                    pass
                 self.device.device_obj.trigger()
-            return self.device.device_obj.image1.shaped_image.get()
-        except (RuntimeError, CaprotoTimeoutError) as ex:
-            msg.logError(ex)
-        return None
+            except (RuntimeError, CaprotoTimeoutError) as ex:
+                msg.logError(ex)
 
-    def setFrame(self, image, *args, **kwargs):
-        if image is not None:
-            self.imageview.imageDisp = None
-            self.error_text.setText('')
-            self.imageview.image = image
-            # self.imageview.updateImage(autoHistogramRange=kwargs['autoLevels'])
-            image = self.imageview.getProcessedImage()
-            if kwargs['autoLevels']:
-                self.imageview.ui.histogram.setHistogramRange(self.imageview.levelMin, self.imageview.levelMax)
-                self.imageview.autoLevels()
-            self.imageview.imageItem.updateImage(image)
+    def setPassive(self, passive):
+        if passive:
+            if self.thread:
+                self.thread.cancel()
+                self.thread = None
+        else:
+            self.thread = threads.QThreadFuture(self._trigger_thread,
+                                                except_slot=lambda ex: self.device.device_obj.unstage())
+            self.thread.start()
 
-            # self.imageview.setImage(image, *args, **kwargs)
-            self._autolevel = False
+    def setFrame(self, value=None, **kwargs):
+        # Never exceed maxfps
+        if 1. / (time.time() - self._last_timestamp) > self.maxfps:
+            return
+
+        self.imageview.imageDisp = None
+        self.error_text.setText('')
+        self.imageview.image = value
+        # self.imageview.updateImage(autoHistogramRange=kwargs['autoLevels'])
+        image = self.imageview.getProcessedImage()
+        # if kwargs['autoLevels']:
+        #     self.imageview.ui.histogram.setHistogramRange(self.imageview.levelMin, self.imageview.levelMax)
+        #     self.imageview.autoLevels()
+        self.imageview.imageItem.updateImage(value)
+
+        # self.imageview.setImage(image, *args, **kwargs)
+        self._autolevel = False
 
         msg.logMessage('fps:', 1. / (time.time() - self._last_timestamp))
+        self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp)}')
         self._last_timestamp = time.time()
 
-        self.timer.singleShot(1. / self.maxfps * 1000, self.update)
+        # self.timer.singleShot(1. / self.maxfps * 1000, self.update)
 
     def setError(self, exception: Exception):
         msg.logError(exception)

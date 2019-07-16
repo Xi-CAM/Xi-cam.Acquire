@@ -67,6 +67,8 @@ class QRunEngine(QObject):
         self.threadfuture.start()
         self.sigStart.emit()
 
+    # state_hook
+
     @property
     def isIdle(self):
         return self.RE.state == 'idle'
