@@ -25,7 +25,6 @@ class AreaDetectorController(ControllerPlugin):
     def __init__(self, device, maxfps=10):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
-        self._autolevel = True
 
         self.setLayout(QVBoxLayout())
 
@@ -101,25 +100,26 @@ class AreaDetectorController(ControllerPlugin):
             self.thread.start()
 
     def setFrame(self, value=None, **kwargs):
+        if value is None:
+            return
+
         # Never exceed maxfps
         if 1. / (time.time() - self._last_timestamp) > self.maxfps:
             return
 
-        self.imageview.imageDisp = None
-        self.error_text.setText('')
-        self.imageview.image = value
-        # self.imageview.updateImage(autoHistogramRange=kwargs['autoLevels'])
-        image = self.imageview.getProcessedImage()
-        # if kwargs['autoLevels']:
-        #     self.imageview.ui.histogram.setHistogramRange(self.imageview.levelMin, self.imageview.levelMax)
-        #     self.imageview.autoLevels()
-        self.imageview.imageItem.updateImage(value)
+        if self.imageview.image is None:
+            self.imageview.setImage(value, autoHistogramRange=True, autoLevels=True)
+        else:
+            self.imageview.imageDisp = None
+            self.error_text.setText('')
+            self.imageview.image = value
+            self.imageview.updateImage(autoHistogramRange=False)
+            value = self.imageview.getProcessedImage()
 
-        # self.imageview.setImage(image, *args, **kwargs)
-        self._autolevel = False
+            self.imageview.imageItem.updateImage(value)
 
         msg.logMessage('fps:', 1. / (time.time() - self._last_timestamp))
-        self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp)}')
+        self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.1f}')
         self._last_timestamp = time.time()
 
         # self.timer.singleShot(1. / self.maxfps * 1000, self.update)
