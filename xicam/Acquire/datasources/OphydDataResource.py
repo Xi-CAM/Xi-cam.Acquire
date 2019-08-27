@@ -1,4 +1,4 @@
-from xicam.plugins.DataResourcePlugin import DataResourcePlugin
+from xicam.plugins.dataresourceplugin import DataResourcePlugin
 from xicam.gui.widgets.dataresourcebrowser import *
 from xicam.plugins import manager as pluginmanager
 from bluesky import RunEngine
