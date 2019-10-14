@@ -76,9 +76,9 @@ class scripteditoritem(widgets.PyCodeEditBase):
         self.panels.append(panels.FoldingPanel())
         self.panels.append(panels.LineNumberPanel())
         self.panels.append(panels.CheckerPanel())
-        self.panels.append(panels.SearchAndReplacePanel(),
-                           panels.SearchAndReplacePanel.Position.BOTTOM)
-        self.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
+        # self.panels.append(panels.SearchAndReplacePanel(),
+        #                    panels.SearchAndReplacePanel.Position.BOTTOM)
+        # self.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
         # add a context menu separator between editor's
         # builtin action and the python specific actions
         self.add_separator()
