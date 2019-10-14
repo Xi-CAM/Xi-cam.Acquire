@@ -7,7 +7,6 @@ from copy import deepcopy
 from collections import namedtuple
 
 from xicam.plugins import SettingsPlugin, manager
-from xicam.plugins import cammart
 from collections import namedtuple
 from xicam.plugins import manager as pluginmanager
 from .device import Device
