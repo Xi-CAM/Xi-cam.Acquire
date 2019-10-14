@@ -6,7 +6,7 @@ from bluesky.plans import count
 from xicam.core.data import NonDBHeader
 from pydm.widgets.line_edit import PyDMLineEdit
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
-from qtpy.QtWidgets import QFormLayout
+from qtpy.QtWidgets import QFormLayout, QDialog
 from xicam.Acquire.runengine import RE
 from xicam.core import msg, threads
 
