@@ -10,7 +10,7 @@ class DeviceList(QListView):
     def __init__(self):
         super(DeviceList, self).__init__()
 
-        self._model = pluginmanager.getPluginByName('xicam.Acquire.devices',
+        self._model = pluginmanager.getPluginByName('devices',
                                                     'SettingsPlugin').plugin_object.devicesmodel
         self.setModel(self._model)
 
