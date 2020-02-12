@@ -87,7 +87,7 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    package_data={'xicam.Acquire': ['*.yapsy-plugin']},
+    package_data={},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
@@ -99,7 +99,16 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    entry_points={},
+    entry_points={'xicam.plugins.ControllerPlugin': [
+        'areadetector = xicam.Acquire.controllers.areadetector:AreaDetectorController',
+        'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
+        'typhon = xicam.Acquire.controlwidgets.typhonmotorcontroller:TyphonMotorController'],
+                  'xicam.plugins.DataResourcePlugin': [
+                      'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
+                      'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
+                  'xicam.plugins.SettingsPlugin': ['devices = xicam.Acquire.devices:DeviceSettingsPlugin',
+                                                   'plans = xicam.Acquire.plans:PlanSettingsPlugin'],
+                  'xicam.plugins.GUIPlugin': ['acquire = xicam.Acquire:AcquirePlugin']},
 
     ext_modules=[],
     include_package_data=True
