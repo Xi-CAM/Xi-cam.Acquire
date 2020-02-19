@@ -103,12 +103,12 @@ setup(
         'areadetector = xicam.Acquire.controllers.areadetector:AreaDetectorController',
         'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
         'typhon = xicam.Acquire.controlwidgets.typhonmotorcontroller:TyphonMotorController'],
-                  'xicam.plugins.DataResourcePlugin': [
-                      'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
-                      'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
-                  'xicam.plugins.SettingsPlugin': ['devices = xicam.Acquire.devices:DeviceSettingsPlugin',
-                                                   'plans = xicam.Acquire.plans:PlanSettingsPlugin'],
-                  'xicam.plugins.GUIPlugin': ['acquire = xicam.Acquire:AcquirePlugin']},
+        'xicam.plugins.DataResourcePlugin': [
+            'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
+            'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
+        'xicam.plugins.SettingsPlugin': ['devices = xicam.Acquire.devices:DeviceSettingsPlugin',
+                                         'plans = xicam.Acquire.plans:PlanSettingsPlugin'],
+        'xicam.plugins.GUIPlugin': ['acquire = xicam.Acquire:AcquirePlugin']},
 
     ext_modules=[],
     include_package_data=True
