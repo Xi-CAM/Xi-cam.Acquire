@@ -194,6 +194,6 @@ class DeviceItem(QStandardItem):
     def widget(self):
         if not self._widget:
             controllername = self.device.controller
-            controllerclass = pluginmanager.getPluginByName(controllername, 'ControllerPlugin').plugin_object
+            controllerclass = pluginmanager.get_plugin_by_name(controllername, 'ControllerPlugin')
             self._widget = controllerclass(self.device)
         return self._widget

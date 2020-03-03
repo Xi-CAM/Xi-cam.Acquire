@@ -16,8 +16,8 @@ class RunEngineWidget(QWidget):
         super(RunEngineWidget, self).__init__(*args, **kwargs)
 
         self.planview = QListView()
-        self.plansmodel = pluginmanager.getPluginByName('plans',
-                                                        'SettingsPlugin').plugin_object.plansmodel  # type: QStandardItemModel
+        self.plansmodel = pluginmanager.get_plugin_by_name('plans',
+                                                           'SettingsPlugin').plansmodel  # type: QStandardItemModel
         self.planview.setModel(self.plansmodel)
         self.selectionmodel = QItemSelectionModel(self.plansmodel)
         self.planview.setSelectionModel(self.selectionmodel)

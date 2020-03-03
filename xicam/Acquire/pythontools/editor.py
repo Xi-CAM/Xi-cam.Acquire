@@ -56,7 +56,7 @@ class scripteditortoolbar(QToolBar):
         # subprocess.call([sys.executable, tmppath])
 
     def SavePlan(self):
-        pluginmanager.getPluginByName('xicam.Acquire.plans', 'SettingsPlugin').plugin_object.add_plan(
+        pluginmanager.getPluginByName('xicam.Acquire.plans', 'SettingsPlugin').add_plan(
             self.editor.toPlainText())
 
 
