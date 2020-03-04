@@ -69,7 +69,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'qscintilla',
                       'ipykernel!=5.0*,!=5.1.0', 'pyqode.python', 'typhos', 'pydm', 'caproto',
-                      'git+https://github.com/pcdshub/typhos.git',
+                      # 'git+https://github.com/pcdshub/typhos.git',
                       # 'git+https://github.com/pcdshub/happi.git'  # ipykernel has faulty releases
                       ],
 
