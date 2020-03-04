@@ -104,7 +104,7 @@ class AreaDetectorController(ControllerPlugin):
             # self.imageview.setImage(image, *args, **kwargs)
             self._autolevel = False
 
-        msg.logMessage('fps:', 1. / (time.time() - self._last_timestamp))
+        self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.2f}')
         self._last_timestamp = time.time()
 
         self.timer.singleShot(1. / self.maxfps * 1000, self.update)
