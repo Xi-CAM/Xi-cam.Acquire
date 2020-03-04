@@ -13,7 +13,7 @@ from xicam.core import msg, threads
 
 class OphydDataResourceModel(QObject):
     def __new__(cls, datasource):
-        model = pluginmanager.getPluginByName('xicam.Acquire.devices', "SettingsPlugin").devicesmodel
+        model = pluginmanager.get_plugin_by_name('xicam.Acquire.devices', "SettingsPlugin").devicesmodel
         model.dataresource = datasource
         return model
 

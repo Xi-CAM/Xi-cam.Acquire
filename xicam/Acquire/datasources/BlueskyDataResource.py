@@ -8,7 +8,7 @@ from xicam.gui.utils import ParameterDialog
 
 class BlueskyDataResourceModel(QObject):
     def __new__(cls, datasource):
-        model = pluginmanager.getPluginByName('xicam.Acquire.plans', "SettingsPlugin").plansmodel
+        model = pluginmanager.get_plugin_by_name('xicam.Acquire.plans', "SettingsPlugin").plansmodel
         model.dataresource = datasource
         return model
 

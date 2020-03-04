@@ -15,7 +15,7 @@ from xicam.plugins import manager as pluginmanager
 class ipythonconsole(RichJupyterWidget):
     def __init__(self):
         super(ipythonconsole, self).__init__()
-        plugin = pluginmanager.getPluginByName('IPython', 'GUIPlugin')
+        plugin = pluginmanager.get_plugin_by_name('IPython', 'GUIPlugin')
 
         self.kernel_manager = plugin.kernel_manager
         self.kernel_client = plugin.kernel_client

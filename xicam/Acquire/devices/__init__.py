@@ -109,7 +109,7 @@ class DeviceDialog(QDialog):
 
         # TODO: add controller plugin
         # Temporary hard coded values
-        for plugin in pluginmanager.getPluginsOfCategory('ControllerPlugin'):
+        for plugin in pluginmanager.get_plugins_of_type('ControllerPlugin'):
             self.controller.addItem(plugin.name)
 
         # Setup dialog buttons
