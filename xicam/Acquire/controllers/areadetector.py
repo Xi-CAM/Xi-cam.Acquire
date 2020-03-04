@@ -42,6 +42,7 @@ class AreaDetectorController(ControllerPlugin):
         config_layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
         config_layout.addRow('Number of Exposures', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumExposures'))
         config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:ImageMode'))
+        config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:TriggerMode'))
 
         config_panel = QGroupBox('Configuration')
         config_panel.setLayout(config_layout)
