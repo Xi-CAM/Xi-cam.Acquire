@@ -90,19 +90,28 @@ class AreaDetectorController(ControllerPlugin):
         self.thread.start()
 
     def update(self):
-        with msg.busyContext():
-            msg.showMessage('Instantiating device...')
-            device = self.device.device_obj  # Force cache the device_obj
-
-            if not self.device.device_obj.trigger_staged:
-                msg.showMessage('Staging the device...')
-                self.device.device_obj.trigger()
-
-        msg.showMessage('Device ready!')
 
         while True:
-            if not self.visibleRegion().isEmpty():
-                yield self.getFrame()
+            try:
+                with msg.busyContext():
+                    if not self.device._device_obj:
+                        msg.showMessage('Instantiating device...')
+                        device = self.device.device_obj  # Force cache the device_obj
+
+                # Do nothing unless this widget is visible
+                if not self.visibleRegion().isEmpty():
+                    # check if the object thinks its staged or is actually not staged
+                    if not self.device.device_obj.trigger_staged or \
+                            self.device.device_obj.image1.array_size.get() == (0,0,0):
+                        msg.showMessage('Staging the device...')
+                        self.device.device_obj.trigger()
+
+                    yield self.getFrame()
+
+            except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError) as ex:
+                threads.invoke_in_main_thread(self.error_text.setText, 'An error occurred communicating with this device.')
+                msg.logError(ex)
+
             time.sleep(1./self.maxfps)
 
     def getFrame(self):
@@ -114,6 +123,7 @@ class AreaDetectorController(ControllerPlugin):
             # data = np.squeeze(CorrectFastCCDImage().asfunction(images=data,)['corrected_images'].value)
             return data
         except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError) as ex:
+            threads.invoke_in_main_thread(self.error_text.setText, 'An error occurred communicating with this device.')
             msg.logError(ex)
         return None
 
@@ -131,7 +141,7 @@ class AreaDetectorController(ControllerPlugin):
 
             self._autolevel = False
 
-        self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.2f}')
+            self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.2f}')
         self._last_timestamp = time.time()
 
     def setError(self, exception: Exception):
