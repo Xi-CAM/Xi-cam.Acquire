@@ -392,11 +392,13 @@ class StageOnFirstTrigger(ProductionCamTriggered):
 
     def __init__(self, *args, **kwargs):
         super(StageOnFirstTrigger, self).__init__(*args, **kwargs)
-        self.hdf5.warmup()
-
+        self._warmed_up = False
         self.trigger_staged = False
 
     def _trigger_stage(self):
+        if not self._warmed_up:
+            self.hdf5.warmup()
+            self._warmed_up = True
         self._acquisition_signal.subscribe(self._acquire_changed)
         return super(StageOnFirstTrigger, self).stage()
 
