@@ -26,6 +26,8 @@ from ophyd.signal import (Signal, EpicsSignalRO, EpicsSignal)
 from ophyd.quadem import QuadEM
 
 
+#TODO: fccd.hdf5.filestore_spec = 'BLAHBLAH'
+
 class StatsPluginCSX(PluginBase):
     """This supports changes to time series PV names in AD 3-3
 
