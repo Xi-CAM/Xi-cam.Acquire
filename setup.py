@@ -107,6 +107,7 @@ setup(
             'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
             'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
         'xicam.plugins.SettingsPlugin': ['devices = xicam.Acquire.devices:DeviceSettingsPlugin',
+                                         'happi_devices = xicam.Acquire.devices.happi:HappiSettingsPlugin',
                                          'plans = xicam.Acquire.plans:PlanSettingsPlugin'],
         'xicam.plugins.GUIPlugin': ['acquire = xicam.Acquire:AcquirePlugin']},
 
