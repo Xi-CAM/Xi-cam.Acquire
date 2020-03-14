@@ -76,6 +76,5 @@ class HappiSettingsPlugin(SettingsPlugin):
         return self._happi_config.text()
 
     def update_client(self, text):
-        print('blah')
         self._device_view.client = Client(path=text)
         self._device_view.search()

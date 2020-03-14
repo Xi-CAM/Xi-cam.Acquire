@@ -10,8 +10,8 @@ class DeviceList(QListView):
     def __init__(self):
         super(DeviceList, self).__init__()
 
-        self._model = pluginmanager.get_plugin_by_name('devices',
-                                                       'SettingsPlugin').devicesmodel
+        self._model = pluginmanager.get_plugin_by_name('happi_devices',
+                                                       'SettingsPlugin').devices_model
         self.setModel(self._model)
 
     # FIXME: device discovery is not officially an element of EPICS's design; early work will add devices explicitly
@@ -36,5 +36,11 @@ class DeviceList(QListView):
     def selectionChanged(self, *args, **kwargs):
         indexes = self.selectedIndexes()
         if indexes and indexes[0].isValid():
+            # from qtpy.QtCore import pyqtRemoveInputHook
+            # pyqtRemoveInputHook()
+            # import pdb; pdb.set_trace()
             item = self._model.itemFromIndex(indexes[0])
-            self.sigShowControl.emit(item.widget)
+            from xicam.Acquire.controllers.areadetector import AreaDetectorController
+            controllerclass = AreaDetectorController
+            widget = controllerclass(item.data())
+            self.sigShowControl.emit(widget)
