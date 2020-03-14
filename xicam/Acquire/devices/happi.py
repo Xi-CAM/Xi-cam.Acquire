@@ -11,6 +11,7 @@ from xicam.gui import static
 # TODO: default directory
 # TODO: what do we want to show when selecting a device?
 # TODO: can u load only one happi config file, or multiple?
+# TODO: debug creation of happi db file (we shouldn't allow direct modification of these files tho)
 
 
 class HappiConfig(QWidget):
