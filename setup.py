@@ -102,7 +102,7 @@ setup(
     entry_points={'xicam.plugins.ControllerPlugin': [
         'areadetector = xicam.Acquire.controllers.areadetector:AreaDetectorController',
         'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
-        'typhon = xicam.Acquire.controlwidgets.typhonmotorcontroller:TyphonMotorController'],
+        'typhos = xicam.Acquire.controlwidgets.typhosmotorcontroller:TyphosMotorController'],
         'xicam.plugins.DataResourcePlugin': [
             'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
             'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
