@@ -1,4 +1,4 @@
-from qtpy.QtWidgets import QWidget, QGridLayout, QListView, QPushButton, QSplitter, QVBoxLayout
+from qtpy.QtWidgets import QWidget, QListView, QPushButton, QSplitter, QVBoxLayout
 from qtpy.QtCore import QItemSelectionModel, Qt
 from qtpy.QtGui import QStandardItemModel
 from xicam.plugins import manager as pluginmanager
@@ -31,8 +31,6 @@ class RunEngineWidget(QWidget):
         self.resumebutton = QPushButton('Resume')
         self.abortbutton = QPushButton('Abort')
         self.abortbutton.setStyleSheet('background-color:red;color:white;font-weight:bold;')
-        self._resumed()
-        self._finished()
 
         # Layout
         self.layout = QVBoxLayout()
@@ -53,6 +51,10 @@ class RunEngineWidget(QWidget):
         self.runwidget.setLayout(self.runlayout)
         self.splitter.addWidget(self.runwidget)
         self.splitter.addWidget(self.metadata)
+
+        # Set initial states
+        self._resumed()
+        self._finished()
 
         # Wireup signals
         self.selectionmodel.currentChanged.connect(self.showPlan)
