@@ -1,14 +1,14 @@
 from xicam.plugins import ControllerPlugin
-from typhon import TyphonDeviceDisplay
+from typhos import TyphosDeviceDisplay
 
 
-class TyphonMotorController(TyphonDeviceDisplay, ControllerPlugin):
+class TyphosMotorController(TyphosDeviceDisplay, ControllerPlugin):
     def __new__(cls, device, *args, **kwargs):
-        splay = TyphonDeviceDisplay.from_device(device.device_obj)
+        splay = TyphosDeviceDisplay.from_device(device.device_obj)
         return splay
 
     def __init__(self, pvname):
-        super(TyphonMotorController, self).__init__(pvname)
+        super(TyphosMotorController, self).__init__(pvname)
 
 # from pydm import application
 # import typhon.plugins
