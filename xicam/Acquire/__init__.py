@@ -1,12 +1,8 @@
 import numpy as np
-from qtpy.QtCore import *
-from qtpy.QtGui import *
-from qtpy.QtWidgets import *
+from qtpy.QtCore import Signal
+from qtpy.QtWidgets import QStackedWidget
 
-from xicam.core import msg
-from xicam.core.data import load_header, NonDBHeader
-
-from xicam.plugins import GUIPlugin, GUILayout, manager as pluginmanager
+from xicam.plugins import GUIPlugin, GUILayout
 from .pythontools.editor import scripteditor
 from .controlwidgets.BCSConnector import BCSConnector
 from .controlwidgets.devicelist import DeviceList
