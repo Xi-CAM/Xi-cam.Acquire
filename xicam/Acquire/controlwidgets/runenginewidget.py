@@ -71,9 +71,11 @@ class RunEngineWidget(QWidget):
         # Run model
         self.runmodel = QStandardItemModel()
         self.runselectionmodel = QItemSelectionModel(self.runmodel)
+        self._current_planitem = None
 
     def showPlan(self, current, previous):
         planitem = self.plansmodel.itemFromIndex(current).data(Qt.UserRole)
+        self._current_planitem = planitem
         self.parameterview.setParameters(getattr(planitem.plan, 'parameter', empty_parameter), showTop=False)
 
     def run(self):
