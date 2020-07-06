@@ -1,3 +1,4 @@
+from qtpy.QtWidgets import QPushButton
 from xicam.plugins.dataresourceplugin import DataResourcePlugin
 from xicam.gui.widgets.dataresourcebrowser import *
 from xicam.plugins import manager as pluginmanager
@@ -8,7 +9,7 @@ from xicam.gui.utils import ParameterDialog
 
 class BlueskyDataResourceModel(QObject):
     def __new__(cls, datasource):
-        model = pluginmanager.get_plugin_by_name('xicam.Acquire.plans', "SettingsPlugin").plansmodel
+        model = pluginmanager.get_plugin_by_name('plans', "SettingsPlugin").plansmodel
         model.dataresource = datasource
         return model
 
