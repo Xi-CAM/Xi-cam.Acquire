@@ -1,3 +1,5 @@
+from . import patches
+
 import numpy as np
 from qtpy.QtCore import Signal
 from qtpy.QtWidgets import QStackedWidget
