@@ -13,7 +13,7 @@ from .device import Device
 from .fastccd import FastCCD
 from .areadetector import AreaDetector, PilatusDetector
 
-from ophyd import EpicsMotor
+from ophyd import EpicsMotor, EpicsSignalWithRBV, EpicsSignal
 
 
 class DeviceSettingsPlugin(SettingsPlugin):
@@ -85,7 +85,8 @@ class DeviceDialog(QDialog):
     sigConnect = Signal(str)
 
     deviceclasses = {'Fast CCD': FastCCD, 'Epics Motor': EpicsMotor, 'Simple Area Detector (Generic)': AreaDetector,
-                     'Pilatus Detector': PilatusDetector}
+                     'Pilatus Detector': PilatusDetector, 'Epics Signal': EpicsSignal,
+                     'Epics Signal (w/Readback)': EpicsSignalWithRBV}
 
     def __init__(self):
         super(DeviceDialog, self).__init__()
@@ -195,5 +196,7 @@ class DeviceItem(QStandardItem):
         if not self._widget:
             controllername = self.device.controller
             controllerclass = pluginmanager.get_plugin_by_name(controllername, 'ControllerPlugin')
+            if not controllerclass:
+                raise ImportError(f"The '{controllername}' controller could not be loaded.")
             self._widget = controllerclass(self.device)
         return self._widget
