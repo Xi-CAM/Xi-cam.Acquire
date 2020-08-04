@@ -124,9 +124,12 @@ class QRunEngine(QObject):
         self.queue.put(PrioritizedPlan(priority, (args, kwargs)))
 
 
+RE = None
 
 
+def initialize():
+    global RE
 
-
-RE = QRunEngine()
-RE.sigDocumentYield.connect(partial(msg.logMessage, level=msg.DEBUG))
+    if RE is None:
+        RE = QRunEngine()
+        RE.sigDocumentYield.connect(partial(msg.logMessage, level=msg.DEBUG))

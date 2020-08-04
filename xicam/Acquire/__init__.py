@@ -10,7 +10,7 @@ from .controlwidgets.BCSConnector import BCSConnector
 from .controlwidgets.devicelist import DeviceList
 from .controlwidgets import RunEngineWidget
 
-from .runengine import RE
+from . import runengine
 
 
 class AcquirePlugin(GUIPlugin):
@@ -18,6 +18,8 @@ class AcquirePlugin(GUIPlugin):
     sigLog = Signal(int, str, str, np.ndarray)
 
     def __init__(self):
+        runengine.initialize()
+
         devicelist = DeviceList()
         controlsstack = QStackedWidget()
         devicelist.sigShowControl.connect(controlsstack.addSetWidget)
