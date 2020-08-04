@@ -10,7 +10,7 @@ from xicam.plugins import SettingsPlugin, manager
 from collections import namedtuple
 from xicam.plugins import manager as pluginmanager
 from .device import Device
-from .fastccd import FastCCD
+from .fastccd import FastCCD, DelayGenerator
 from .areadetector import AreaDetector, PilatusDetector
 
 from ophyd import EpicsMotor, EpicsSignalWithRBV, EpicsSignal
@@ -86,7 +86,7 @@ class DeviceDialog(QDialog):
 
     deviceclasses = {'Fast CCD': FastCCD, 'Epics Motor': EpicsMotor, 'Simple Area Detector (Generic)': AreaDetector,
                      'Pilatus Detector': PilatusDetector, 'Epics Signal': EpicsSignal,
-                     'Epics Signal (w/Readback)': EpicsSignalWithRBV}
+                     'Epics Signal (w/Readback)': EpicsSignalWithRBV, 'Delay Generator': DelayGenerator}
 
     def __init__(self):
         super(DeviceDialog, self).__init__()

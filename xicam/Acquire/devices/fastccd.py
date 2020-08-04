@@ -7,7 +7,6 @@ from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
 from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
-from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
 from ophyd.utils import set_and_wait
@@ -20,10 +19,9 @@ from ophyd import Device, Component as Cpt
 from ophyd.areadetector.base import (ADBase, ADComponent as ADCpt, ad_group,
                                      EpicsSignalWithRBV as SignalWithRBV)
 from ophyd.areadetector.plugins import PluginBase
-from ophyd.areadetector.trigger_mixins import TriggerBase, ADTriggerStatus
 from ophyd.device import DynamicDeviceComponent as DDC, Staged
 from ophyd.signal import (Signal, EpicsSignalRO, EpicsSignal)
-from ophyd.quadem import QuadEM
+import ophyd
 
 
 #TODO: fccd.hdf5.filestore_spec = 'BLAHBLAH'
@@ -421,3 +419,12 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         return super().trigger()
 
 FastCCD = StageOnFirstTrigger
+
+
+class trigger_rateDevice(ophyd.Device):
+    setpoint = Cpt(EpicsSignal, '', doc='TriggerRate')
+    readback = Cpt(EpicsSignalRO, '_RBV', doc='TriggerRate')
+
+
+class DelayGenerator(ophyd.Device):
+    trigger_rate = Cpt(trigger_rateDevice, 'trigger_rate', doc='TriggerRate')
