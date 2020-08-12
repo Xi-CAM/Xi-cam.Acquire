@@ -10,7 +10,6 @@ from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
 from ophyd import Component as Cpt
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
-from ophyd.utils import set_and_wait
 import time as ttime
 import itertools
 
@@ -28,6 +27,8 @@ from ophyd.quadem import QuadEM
 
 #TODO: fccd.hdf5.filestore_spec = 'BLAHBLAH'
 
+# compare with stats_plugin.py in
+# https://github.com/NSLS-II-CSX/xf23id1_profiles/tree/master/profile_collection/startup/csx1/devices
 class StatsPluginCSX(PluginBase):
     """This supports changes to time series PV names in AD 3-3
 
@@ -343,26 +344,22 @@ class TriggeredCamExposure(Device):
         if exp[0] is not None:
             Efccd = exp[0] + self._Tc + self._To
             # To = start of FastCCD Exposure
-            aa = 0  # Shutter open
-            bb = Efccd - self._Tc + aa  # Shutter close
-            cc = self._To * 3  # diag6 gate start
-            dd = exp[0] - (self._Tc * 2)  # diag6 gate stop
-            ee = 0  # Channel Adv Start
-            ff = 0.001  # Channel Adv Stop
-            gg = self._To  # MCS Count Gate Start
-            hh = exp[0] + self._To  # MCS Count Gate Stop
+            tr = 0  # Shutter open
+            tm = 1  # Shutter open
+            dt = 1e-3  # delay time
+            st = 140e-3 # shutter time
+
 
             # Set delay generator
-            self.parent.dg1.A.set(aa)
-            self.parent.dg1.B.set(bb)
-            self.parent.dg1.C.set(cc)
-            self.parent.dg1.D.set(dd)
-            self.parent.dg1.E.set(ee)
-            self.parent.dg1.F.set(ff)
-            self.parent.dg1.G.set(gg)
-            self.parent.dg1.H.set(hh)
-            self.parent.dg2.A.set(0)
-            self.parent.dg2.B.set(0.0005)
+            self.parent.dg1.trigger_rate.set(tr)
+            self.parent.dg1.trigger_on_off.set(tm)
+            self.parent.dg1.delay_time.set(dt)
+            self.parent.dg1.shutter_time.set(st)
+            self.parent.dg1.init.set()
+            self.parent.dg1.reset.set()
+
+            # self.parent.dg2.A.set(0)
+            # self.parent.dg2.B.set(0.0005)
 
             # Set AreaDetector
             self.parent.cam.acquire_time.set(Efccd)
@@ -385,8 +382,33 @@ class TriggeredCamExposure(Device):
         return None
 
 
+# class DelayGeneratorChan(EpicsSignal):
+#     def __init__(self, prefix, **kwargs):
+#         super().__init__(prefix + '-RB', write_pv=prefix + '-SP', **kwargs)
+
+
+class DelayGenerator(Device):
+    trigger_rate = Cpt(EpicsSignalWithRBV, '.trigger_rate')
+    trigger_on_off = Cpt(EpicsSignalWithRBV, '.trigger_on_off')
+    delay_time = Cpt(EpicsSignalWithRBV, '.delay_time')
+    shutter_time = Cpt(EpicsSignalWithRBV, '.shutter_time')
+    init = Cpt(EpicsSignal, '.init')
+    reset = Cpt(EpicsSignal, '.reset')
+
+
+
 class ProductionCamTriggered(ProductionCamStandard):
+    dg2 = FCpt(DelayGenerator, '{self._dg2_prefix}')
+    dg1 = FCpt(DelayGenerator, '{self._dg1_prefix}')
     exposure = Cpt(TriggeredCamExposure, '')
+    #TODO: add delay generator code here see areadetector.py
+    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/master/profile_collection/startup/csx1/devices/areadetector.py
+    # line 258
+    # scaler/delaygen? defined in
+    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/master/profile_collection/startup/csx1/devices/scaler.py
+    # or
+    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/1ab6316a55049661d349afd0a8965791bfe83976/profile_collection/startup/csx1/devices/devices.py#L134
+
 
 
 class StageOnFirstTrigger(ProductionCamTriggered):
