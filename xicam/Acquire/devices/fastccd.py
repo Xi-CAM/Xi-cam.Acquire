@@ -337,17 +337,17 @@ class TriggeredCamExposure(Device):
         self._readout = 0.080
         super().__init__(*args, **kwargs)
 
-    def set(self, exp):
+    def set(self, exp: float, triggerrate: float = 1., trigger_on: bool = 1, delaytime: float=1e-3, shuttertime: float=140e-3):
         # Exposure time = 0
         # Cycle time = 1
 
         if exp[0] is not None:
             Efccd = exp[0] + self._Tc + self._To
             # To = start of FastCCD Exposure
-            tr = 0  # Shutter open
-            tm = 1  # Shutter open
-            dt = 1e-3  # delay time
-            st = 140e-3 # shutter time
+            tr = triggerrate  # trigger rate
+            tm = trigger_on  # Shutter open
+            dt = delaytime  # delay time
+            st = shuttertime# shutter time
 
 
             # Set delay generator
