@@ -1,26 +1,25 @@
+import time as ttime
+import itertools
+
 from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin)
 
+from ophyd import Component as Cpt
+from ophyd import AreaDetector
+from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
+from ophyd.areadetector.base import (ADBase, ADComponent as ADCpt, ad_group,
+                                     EpicsSignalWithRBV as SignalWithRBV)
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
-from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
 from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
-from ophyd import Component as Cpt
-from ophyd.device import FormattedComponent as FCpt
-from ophyd import AreaDetector
-import time as ttime
-import itertools
-
-from ophyd.sim import NullStatus
-
-from ophyd import Device, Component as Cpt
-from ophyd.areadetector.base import (ADBase, ADComponent as ADCpt, ad_group,
-                                     EpicsSignalWithRBV as SignalWithRBV)
-from ophyd.areadetector.plugins import PluginBase
 from ophyd.areadetector.trigger_mixins import TriggerBase, ADTriggerStatus
+
+from ophyd.device import FormattedComponent as FCpt
 from ophyd.device import DynamicDeviceComponent as DDC, Staged
+from ophyd.utils import set_and_wait
+from ophyd.sim import NullStatus
 from ophyd.signal import (Signal, EpicsSignalRO, EpicsSignal)
 from ophyd.quadem import QuadEM
 
@@ -337,7 +336,7 @@ class TriggeredCamExposure(Device):
         self._readout = 0.080
         super().__init__(*args, **kwargs)
 
-    def set(self, exp: float, triggerrate: float = 1., trigger_on: bool = 1, delaytime: float=1e-3, shuttertime: float=140e-3):
+    def set(self, exp: float, triggerrate: float = 1., trigger_on: bool = True, delaytime: float=1e-3, shuttertime: float=140e-3):
         # Exposure time = 0
         # Cycle time = 1
 
@@ -349,14 +348,12 @@ class TriggeredCamExposure(Device):
             dt = delaytime  # delay time
             st = shuttertime# shutter time
 
-
-            # Set delay generator
+            # Setup delay generator
+            self.parent.dg1.init.set(1)
             self.parent.dg1.trigger_rate.set(tr)
             self.parent.dg1.trigger_on_off.set(tm)
             self.parent.dg1.delay_time.set(dt)
             self.parent.dg1.shutter_time.set(st)
-            self.parent.dg1.init.set()
-            self.parent.dg1.reset.set()
 
             # self.parent.dg2.A.set(0)
             # self.parent.dg2.B.set(0.0005)
@@ -382,20 +379,18 @@ class TriggeredCamExposure(Device):
         return None
 
 
-# class DelayGeneratorChan(EpicsSignal):
-#     def __init__(self, prefix, **kwargs):
-#         super().__init__(prefix + '-RB', write_pv=prefix + '-SP', **kwargs)
-
-
 class DelayGenerator(Device):
     trigger_rate = Cpt(EpicsSignalWithRBV, '.trigger_rate')
     trigger_on_off = Cpt(EpicsSignalWithRBV, '.trigger_on_off')
     delay_time = Cpt(EpicsSignalWithRBV, '.delay_time')
     shutter_time = Cpt(EpicsSignalWithRBV, '.shutter_time')
-    init = Cpt(EpicsSignal, '.init')
+    init = Cpt(EpicsSignal, '.initialize')
     reset = Cpt(EpicsSignal, '.reset')
 
 
+# class DelayGeneratorChan(EpicsSignal):
+#     def __init__(self, prefix, **kwargs):
+#         super().__init__(prefix + '-RB', write_pv=prefix + '-SP', **kwargs)
 
 class ProductionCamTriggered(ProductionCamStandard):
     dg2 = FCpt(DelayGenerator, '{self._dg2_prefix}')
@@ -407,7 +402,7 @@ class ProductionCamTriggered(ProductionCamStandard):
     # scaler/delaygen? defined in
     # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/master/profile_collection/startup/csx1/devices/scaler.py
     # or
-    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/1ab6316a55049661d349afd0a8965791bfe83976/profile_collection/startup/csx1/devices/devices.py#L134
+    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/master/profile_collection/startup/csx1/devices/devices.py#L134
 
 
 
