@@ -1,20 +1,67 @@
-from appdirs import site_config_dir, user_config_dir
 from pathlib import Path
 
-from qtpy.QtCore import QDir, Signal, Qt
+from qtpy.QtCore import QDir, Signal, Qt, QItemSelection
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
-from qtpy.QtWidgets import QFileDialog, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout, QWidget, QLabel, QListView
-from happi import Client
+from qtpy.QtWidgets import QFileDialog, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout, QWidget, QLabel, QListView, QTreeView, QAbstractItemView
+from happi import Client, Device, HappiItem
 from happi.qt import HappiDeviceListView
+from typhos.display import TyphosDeviceDisplay
 
+
+from xicam.core.paths import site_config_dir, user_config_dir
 from xicam.plugins import SettingsPlugin
 from xicam.gui import static
 
 
-# TODO: default directory -- appdirs
-# TODO: what do we want to show when selecting a device?
-# TODO: load ALL happi JSONs in the appdirs directories
-# TODO: don't support custom locations directories yet
+happi_site_dir = site_config_dir
+happi_user_dir = user_config_dir
+
+
+class HappiClientTreeView(QTreeView):
+    """Tree view that displays happi clients with any associated devices as their children."""
+    def __init__(self, *args, **kwargs):
+        super(HappiClientTreeView, self).__init__(*args, **kwargs)
+
+        self.setHeaderHidden(True)
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    def selectionChanged(self, selected: QItemSelection, deselected: QItemSelection) -> None:
+        selected_indexes = selected.indexes()
+        if not selected_indexes:
+            return
+        data = selected_indexes[0].data(Qt.UserRole+1)
+        if isinstance(data, HappiItem):
+            self._activate_device(data)
+            print('yes')
+        else:
+            print('no')
+
+    def _activate_device(self, device):
+
+        # display = TyphosDeviceDisplay.from_device(device.device_class)
+        from happi import from_container
+        dev = from_container(device)
+        display = TyphosDeviceDisplay.from_device(dev)
+        display.show()
+
+
+class HappiClientModel(QStandardItemModel):
+    def __init__(self, *args, **kwargs):
+        super(HappiClientModel, self).__init__(*args, **kwargs)
+        self._clients = []
+
+    def add_client(self, client: Client):
+        self._clients += client
+        client_item = QStandardItem(client.backend.path)
+        client_item.setData(client)
+        self.appendRow(client_item)
+        for result in client.search():
+            self.add_device(client_item, result.item)
+
+    def add_device(self, client_item: QStandardItem, device: Device):
+        device_item = QStandardItem(device.name)
+        device_item.setData(device)
+        client_item.appendRow(device_item)
 
 
 class HappiConfig(QWidget):
@@ -36,10 +83,7 @@ class HappiConfig(QWidget):
 
 class HappiSettingsPlugin(SettingsPlugin):
     def __init__(self):
-        self._happi_db_dirs = [
-            site_config_dir(appname="xicam", appauthor="CAMERA"),
-            user_config_dir(appname="xicam", appauthor="CAMERA")
-        ]
+        self._happi_db_dirs = [happi_site_dir, happi_user_dir]
         self._device_view = HappiDeviceListView()
         self._databases_model = QStandardItemModel()
         self._happi_config = HappiConfig()
@@ -73,12 +117,6 @@ class HappiSettingsPlugin(SettingsPlugin):
     @property
     def devices_model(self):
         return self._device_view.model
-
-    # def fromState(self, state):
-    #     self._happi_config.setText(state)
-    #
-    # def toState(self):
-    #     return self._happi_config.text()
 
     def update_client(self):
         # FIX
