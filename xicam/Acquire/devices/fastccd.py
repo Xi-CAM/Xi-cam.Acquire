@@ -19,9 +19,8 @@ from ophyd.areadetector.trigger_mixins import TriggerBase, ADTriggerStatus
 from ophyd.device import FormattedComponent as FCpt
 from ophyd.device import DynamicDeviceComponent as DDC, Staged
 from ophyd.utils import set_and_wait
-from ophyd.sim import NullStatus
+from ophyd.sim import NullStatus, FakeEpicsSignal
 from ophyd.signal import (Signal, EpicsSignalRO, EpicsSignal)
-from ophyd.quadem import QuadEM
 
 
 #TODO: fccd.hdf5.filestore_spec = 'BLAHBLAH'
@@ -221,9 +220,33 @@ class FCCDCam(AreaDetectorCam):
     fcric_clamp = Cpt(EpicsSignalWithRBV, 'FCRICClamp')
     temp = FCpt(EpicsSignal, '{self._temp_pv}')
 
+    # signals redirecting to shutter
+    exposure_time = Cpt(FakeEpicsSignal, 'ExposureTime')
+    shutter_open_delay = Cpt(FakeEpicsSignal, 'ShutterOpenDelay', value=0.0035)
+    shutter_close_delay = Cpt(FakeEpicsSignal, 'ShutterCloseDelay', value=0.004)
+    readout_time = Cpt(FakeEpicsSignal, 'ReadoutTime', value=0.080)
+
+    # Override manipulated signals to hide them from users
+    acquire_period = ADCpt(SignalWithRBV, 'AcquirePeriod', kind='omitted')
+    acquire_time = ADCpt(SignalWithRBV, 'AcquireTime', kind='omitted')
+
     def __init__(self, *args, temp_pv=None, **kwargs):
         self._temp_pv = temp_pv
         super().__init__(*args, **kwargs)
+
+        self.exposure_time.sim_set_putter(self.exposure_time_putter)
+
+    def exposure_time_putter(self, value):
+        acquire_time = value + self.shutter_close_delay.get() + self.shutter_open_delay.get()
+        acquire_period = acquire_time + self.readout_time.get()
+
+        self.parent.dg1.init.set(1)
+        self.acquire_time.set_and_wait(acquire_time)
+        self.acquire_period.set_and_wait(acquire_period)
+        self.parent.dg1.trigger_rate.set_and_wait(acquire_period)
+        self.parent.dg1.trigger_on_off.set_and_wait(True)
+        self.parent.dg1.delay_time.set_and_wait(self.shutter_open_delay.get())
+        self.parent.dg1.shutter_time.set_and_wait(value)
 
 
 class FastCCDPlugin(PluginBase):
@@ -319,64 +342,8 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
         # file_number is *next* iteration
         res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
         self.hdf5._generate_resource(res_kwargs)
-        # can add this if we're not confident about setting...
-        # val = self.hdf5.capture.get()
-        # print("resuming FCCD")
-        # while (np.abs(val-set_val) > 1e-6):
-        # self.hdf5.capture.put(set_val)
-        # val = self.hdf5.capture.get()
-        # print("Success")
+
         return super().resume()
-
-
-class TriggeredCamExposure(Device):
-    def __init__(self, *args, **kwargs):
-        self._Tc = 0.004
-        self._To = 0.0035
-        self._readout = 0.080
-        super().__init__(*args, **kwargs)
-
-    def set(self, exp: float, triggerrate: float = 1., trigger_on: bool = True, delaytime: float=1e-3, shuttertime: float=140e-3):
-        # Exposure time = 0
-        # Cycle time = 1
-
-        if exp[0] is not None:
-            Efccd = exp[0] + self._Tc + self._To
-            # To = start of FastCCD Exposure
-            tr = triggerrate  # trigger rate
-            tm = trigger_on  # Shutter open
-            dt = delaytime  # delay time
-            st = shuttertime# shutter time
-
-            # Setup delay generator
-            self.parent.dg1.init.set(1)
-            self.parent.dg1.trigger_rate.set(tr)
-            self.parent.dg1.trigger_on_off.set(tm)
-            self.parent.dg1.delay_time.set(dt)
-            self.parent.dg1.shutter_time.set(st)
-
-            # self.parent.dg2.A.set(0)
-            # self.parent.dg2.B.set(0.0005)
-
-            # Set AreaDetector
-            self.parent.cam.acquire_time.set(Efccd)
-
-        # Now do period
-        if exp[1] is not None:
-            if exp[1] < (Efccd + self._readout):
-                p = Efccd + self._readout
-            else:
-                p = exp[1]
-
-        self.parent.cam.acquire_period.set(p)
-
-        if exp[2] is not None:
-            self.parent.cam.num_images.set(exp[2])
-
-        return NullStatus()
-
-    def get(self):
-        return None
 
 
 class DelayGenerator(Device):
@@ -388,22 +355,13 @@ class DelayGenerator(Device):
     reset = Cpt(EpicsSignal, '.reset')
 
 
-# class DelayGeneratorChan(EpicsSignal):
-#     def __init__(self, prefix, **kwargs):
-#         super().__init__(prefix + '-RB', write_pv=prefix + '-SP', **kwargs)
-
 class ProductionCamTriggered(ProductionCamStandard):
-    dg2 = FCpt(DelayGenerator, '{self._dg2_prefix}')
     dg1 = FCpt(DelayGenerator, '{self._dg1_prefix}')
-    exposure = Cpt(TriggeredCamExposure, '')
-    #TODO: add delay generator code here see areadetector.py
-    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/master/profile_collection/startup/csx1/devices/areadetector.py
-    # line 258
-    # scaler/delaygen? defined in
-    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/master/profile_collection/startup/csx1/devices/scaler.py
-    # or
-    # https://github.com/NSLS-II-CSX/xf23id1_profiles/blob/master/profile_collection/startup/csx1/devices/devices.py#L134
 
+    # TODO: populate dg1_prefix using happi rather than hard coded value
+    def __init__(self, *args, dg1_prefix=None, **kwargs):
+        self._dg1_prefix = "XF:7011:ShutterDelayGenerator:"
+        super().__init__(*args, **kwargs)
 
 
 class StageOnFirstTrigger(ProductionCamTriggered):
