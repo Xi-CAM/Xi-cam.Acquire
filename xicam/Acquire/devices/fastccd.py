@@ -220,33 +220,48 @@ class FCCDCam(AreaDetectorCam):
     fcric_clamp = Cpt(EpicsSignalWithRBV, 'FCRICClamp')
     temp = FCpt(EpicsSignal, '{self._temp_pv}')
 
-    # signals redirecting to shutter
-    exposure_time = Cpt(FakeEpicsSignal, 'ExposureTime')
-    shutter_open_delay = Cpt(FakeEpicsSignal, 'ShutterOpenDelay', value=0.0035)
-    shutter_close_delay = Cpt(FakeEpicsSignal, 'ShutterCloseDelay', value=0.004)
     readout_time = Cpt(FakeEpicsSignal, 'ReadoutTime', value=0.080)
 
     # Override manipulated signals to hide them from users
-    acquire_period = ADCpt(SignalWithRBV, 'AcquirePeriod', kind='omitted')
-    acquire_time = ADCpt(SignalWithRBV, 'AcquireTime', kind='omitted')
+    _acquire_time = AreaDetectorCam.acquire_time
+    _acquire_period = AreaDetectorCam.acquire_period
+    acquire_period = ADCpt(FakeEpicsSignal, 'AcquirePeriod')
+    acquire_time = ADCpt(FakeEpicsSignal, 'AcquireTime')
 
     def __init__(self, *args, temp_pv=None, **kwargs):
         self._temp_pv = temp_pv
         super().__init__(*args, **kwargs)
 
-        self.exposure_time.sim_set_putter(self.exposure_time_putter)
+        # TODO: decide on kind for the real signals
+        # self._acquire_period.kind = 'omitted'
+        # self._acquire_time.kind = 'omitted'
 
-    def exposure_time_putter(self, value):
-        acquire_time = value + self.shutter_close_delay.get() + self.shutter_open_delay.get()
-        acquire_period = acquire_time + self.readout_time.get()
+        self.acquire_time.sim_set_putter(self.acquire_time_putter)
+        self.acquire_period.sim_set_putter(self.acquire_period_putter)
+
+    def acquire_time_putter(self, value):
+        acquire_time = value + self.parent.dg1.shutter_close_delay.get() + self.parent.dg1.delay_time.get()  # TODO: rename delay_time -> shutter_open_delay to be more specific
 
         self.parent.dg1.init.set(1)
-        self.acquire_time.set_and_wait(acquire_time)
-        self.acquire_period.set_and_wait(acquire_period)
-        self.parent.dg1.trigger_rate.set_and_wait(acquire_period)
+        self._acquire_time.set_and_wait(acquire_time)
         self.parent.dg1.trigger_on_off.set_and_wait(True)
-        self.parent.dg1.delay_time.set_and_wait(self.shutter_open_delay.get())
         self.parent.dg1.shutter_time.set_and_wait(value)
+
+        return super().put(value)  # TODO: check whose put this is
+
+    def acquire_period_putter(self, value):
+        # assert that this value makes sense (otherwise acquire_time should be set first)
+        assert self._acquire_time.get() + self.readout_time.get() < value
+
+        self.parent.dg1.init.set(
+            1)  # TODO: when should it be initialized? everytime values are changed? just once at startup? what does init actually do?
+        self._acquire_period.set_and_wait(value)
+        self.parent.dg1.trigger_rate.set_and_wait(1. / value)
+        self.parent.dg1.trigger_on_off.set_and_wait(
+            True)  # TODO: when should the triggering be set on? when staging? Just once at startup?
+        self.parent.dg1.shutter_time.set_and_wait(value)
+
+        return super().put(value)
 
 
 class FastCCDPlugin(PluginBase):
@@ -347,12 +362,16 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
 
 
 class DelayGenerator(Device):
-    trigger_rate = Cpt(EpicsSignalWithRBV, '.trigger_rate')
+    trigger_rate = Cpt(EpicsSignalWithRBV,
+                       '.trigger_rate')  # TODO: either hide these or make them couple back to camera
     trigger_on_off = Cpt(EpicsSignalWithRBV, '.trigger_on_off')
-    delay_time = Cpt(EpicsSignalWithRBV, '.delay_time')
+    delay_time = Cpt(EpicsSignalWithRBV, '.delay_time',
+                     value=0.0035)  # TODO: This (and all) default values should be set on the IOC!
     shutter_time = Cpt(EpicsSignalWithRBV, '.shutter_time')
     init = Cpt(EpicsSignal, '.initialize')
     reset = Cpt(EpicsSignal, '.reset')
+
+    shutter_close_delay = Cpt(FakeEpicsSignal, 'ShutterCloseDelay', value=0.004)
 
 
 class ProductionCamTriggered(ProductionCamStandard):
