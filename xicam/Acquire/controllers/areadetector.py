@@ -51,11 +51,18 @@ class AreaDetectorController(ControllerPlugin):
 
         pvname = device.pvname
         config_layout = QFormLayout()
-        config_layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:AcquireTime'))
-        config_layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
-        config_layout.addRow('Number of Exposures', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumExposures'))
-        config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:ImageMode'))
-        config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:TriggerMode'))
+        config_layout.addRow('Acquire Time',
+                             PyDMLineEdit(init_channel=f'ca://{device.device_obj.cam.acquire_time.setpoint_pvname}'))
+        config_layout.addRow('Acquire Period',
+                             PyDMLineEdit(init_channel=f'ca://{device.device_obj.cam.acquire_period.setpoint_pvname}'))
+        config_layout.addRow('Number of Images',
+                             PyDMLineEdit(init_channel=f'ca://{device.device_obj.cam.num_images.setpoint_pvname}'))
+        config_layout.addRow('Number of Exposures',
+                             PyDMLineEdit(init_channel=f'ca://{device.device_obj.cam.num_exposures.setpoint_pvname}'))
+        config_layout.addRow('Image Mode',
+                             PyDMEnumComboBox(init_channel=f'ca://{device.device_obj.cam.image_mode.setpoint_pvname}'))
+        config_layout.addRow('Trigger Mode', PyDMEnumComboBox(
+            init_channel=f'ca://{device.device_obj.cam.trigger_mode.setpoint_pvname}'))
 
         config_panel = QGroupBox('Configuration')
         config_panel.setLayout(config_layout)
