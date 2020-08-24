@@ -7,7 +7,7 @@ from qtpy.QtWidgets import QStackedWidget
 from xicam.plugins import GUIPlugin, GUILayout
 from .pythontools.editor import scripteditor
 from .controlwidgets.BCSConnector import BCSConnector
-from .controlwidgets.devicelist import DeviceList
+from .controlwidgets.deviceview import DeviceView
 from .controlwidgets import RunEngineWidget
 
 from .runengine import RE
@@ -18,7 +18,8 @@ class AcquirePlugin(GUIPlugin):
     sigLog = Signal(int, str, str, np.ndarray)
 
     def __init__(self):
-        devicelist = DeviceList()
+        deviceviewcontainer = DeviceView()
+        devicelist = deviceviewcontainer.view
         controlsstack = QStackedWidget()
         devicelist.sigShowControl.connect(controlsstack.addSetWidget)
 
