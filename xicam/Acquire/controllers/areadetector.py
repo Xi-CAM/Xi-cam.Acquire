@@ -51,8 +51,6 @@ class AreaDetectorController(ControllerPlugin):
 
         pvname = device.prefix
       
-        from ..devices.fastccd import FastCCD
-        device._device_obj = device.device_obj = FastCCD(prefix=pvname, name=device.name)
         config_layout = QFormLayout()
         config_layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:AcquireTime'))
         config_layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
