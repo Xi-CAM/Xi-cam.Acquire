@@ -67,7 +67,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'qscintilla',
+    install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'happi',
                       'ipykernel!=5.0*,!=5.1.0', 'pyqode.python', 'typhos', 'pydm', 'caproto',
                       # 'git+https://github.com/pcdshub/typhos.git',
                       # 'git+https://github.com/pcdshub/happi.git'  # ipykernel has faulty releases
@@ -107,6 +107,7 @@ setup(
             'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
             'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
         'xicam.plugins.SettingsPlugin': ['devices = xicam.Acquire.devices:DeviceSettingsPlugin',
+                                         'happi_devices = xicam.Acquire.devices.happi:HappiSettingsPlugin',
                                          'plans = xicam.Acquire.plans:PlanSettingsPlugin'],
         'xicam.plugins.GUIPlugin': ['acquire = xicam.Acquire:AcquirePlugin']},
 
