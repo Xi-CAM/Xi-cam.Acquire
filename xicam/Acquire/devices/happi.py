@@ -12,8 +12,8 @@ from xicam.plugins import SettingsPlugin
 from xicam.gui import static
 
 
-happi_site_dir = site_config_dir
-happi_user_dir = user_config_dir
+happi_site_dir = str(Path(site_config_dir) / "happi")
+happi_user_dir = str(Path(user_config_dir) / "happi")
 
 
 class HappiClientTreeView(QTreeView):
