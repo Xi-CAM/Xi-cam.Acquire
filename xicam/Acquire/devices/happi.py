@@ -1,19 +1,17 @@
 from pathlib import Path
+import os
 
 from qtpy.QtCore import Qt, QItemSelection, Signal
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView
 from happi import Client, Device, HappiItem, from_container
-from typhos.display import TyphosDeviceDisplay
-
 
 from xicam.core.paths import site_config_dir, user_config_dir
-from xicam.plugins import SettingsPlugin
+from xicam.plugins import SettingsPlugin, manager as pluginmanager
 from xicam.gui import static
 
-
-happi_site_dir = site_config_dir
-happi_user_dir = user_config_dir
+happi_site_dir = os.path.join(site_config_dir, "happi/")
+happi_user_dir = os.path.join(user_config_dir, "happi/")
 
 
 class HappiClientTreeView(QTreeView):
@@ -35,9 +33,10 @@ class HappiClientTreeView(QTreeView):
 
     def _activate(self, item: HappiItem):
         device = from_container(item)
-        display = TyphosDeviceDisplay.from_device(device)
+        controller_name = item.extraneous.get("controller_class", "typhos")
+        controller = pluginmanager.get_plugin_by_name(controller_name, 'ControllerPlugin')
+        display = controller(device)
         self.sigShowControl.emit(display)
-
 
 
 class HappiClientModel(QStandardItemModel):

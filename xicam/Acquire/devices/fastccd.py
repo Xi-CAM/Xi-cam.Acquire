@@ -219,10 +219,11 @@ class FCCDCam(AreaDetectorCam):
     overscan_cols = Cpt(EpicsSignalWithRBV, 'OverscanCols')
     fcric_gain = Cpt(EpicsSignalWithRBV, 'FCRICGain')
     fcric_clamp = Cpt(EpicsSignalWithRBV, 'FCRICClamp')
-    temp = FCpt(EpicsSignal, '{self._temp_pv}')
+
+    # temp = FCpt(EpicsSignal, '{self._temp_pv}')
 
     def __init__(self, *args, temp_pv=None, **kwargs):
-        self._temp_pv = temp_pv
+        # self._temp_pv = temp_pv
         super().__init__(*args, **kwargs)
 
 

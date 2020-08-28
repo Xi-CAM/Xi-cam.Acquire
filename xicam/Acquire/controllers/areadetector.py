@@ -95,17 +95,16 @@ class AreaDetectorController(ControllerPlugin):
         while True:
             try:
                 with msg.busyContext():
-                    if not self.device._device_obj:
-                        msg.showMessage('Instantiating device...')
-                        device = self.device.device_obj  # Force cache the device_obj
+                    msg.showMessage('Connecting to device...')
+                    self.device.wait_for_connection()
 
                 # Do nothing unless this widget is visible
                 if not self.visibleRegion().isEmpty():
                     # check if the object thinks its staged or is actually not staged
-                    if not self.device.device_obj.trigger_staged or \
-                            self.device.device_obj.image1.array_size.get() == (0,0,0):
+                    if not self.device.trigger_staged or \
+                            self.device.image1.array_size.get() == (0, 0, 0):
                         msg.showMessage('Staging the device...')
-                        self.device.device_obj.trigger()
+                        self.device.trigger()
 
                     yield self.getFrame()
 
@@ -118,8 +117,8 @@ class AreaDetectorController(ControllerPlugin):
     def getFrame(self):
         try:
             if not self.passive.isChecked():
-                self.device.device_obj.trigger()
-            data = self.device.device_obj.image1.shaped_image.get()
+                self.device.trigger()
+            data = self.device.image1.shaped_image.get()
             # TODO: apply corrections to display; requires access to flats and darks
             # data = np.squeeze(CorrectFastCCDImage().asfunction(images=data,)['corrected_images'].value)
             return data
@@ -150,7 +149,7 @@ class AreaDetectorController(ControllerPlugin):
         self.error_text.setText('An error occurred while connecting to this device.')
 
     def acquire(self):
-        RE(count([self.device.device_obj]))
+        RE(count([self.device]))
 
 
 # TODO: add visibility checking
