@@ -4,7 +4,7 @@ from typhos import TyphosDeviceDisplay
 
 class TyphosController(TyphosDeviceDisplay, ControllerPlugin):
     def __new__(cls, device, *args, **kwargs):
-        splay = TyphosDeviceDisplay.from_device(device.device_obj)
+        splay = TyphosDeviceDisplay.from_device(device)
         return splay
 
     def __init__(self, pvname):
