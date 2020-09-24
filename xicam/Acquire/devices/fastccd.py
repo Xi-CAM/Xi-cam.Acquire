@@ -1,33 +1,35 @@
-from ophyd import (EpicsScaler, EpicsSignal, EpicsSignalRO, Device,
-                   SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin)
-
-from ophyd.areadetector.cam import AreaDetectorCam
-from ophyd.areadetector.detectors import DetectorBase
-from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
-from ophyd.areadetector import ADComponent, EpicsSignalWithRBV
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
-from ophyd import Component as Cpt
-from ophyd.device import FormattedComponent as FCpt
-from ophyd import AreaDetector
-from ophyd.utils import set_and_wait
 import time as ttime
 import itertools
 
-from ophyd.sim import NullStatus
+from ophyd import (Device,
+                   SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
+                   ROIPlugin, TransformPlugin, OverlayPlugin)
 
-from ophyd import Device, Component as Cpt
+from ophyd import Component as Cpt
+from ophyd import AreaDetector
+from ophyd.areadetector import EpicsSignalWithRBV
 from ophyd.areadetector.base import (ADBase, ADComponent as ADCpt, ad_group,
                                      EpicsSignalWithRBV as SignalWithRBV)
-from ophyd.areadetector.plugins import PluginBase
-from ophyd.areadetector.trigger_mixins import TriggerBase, ADTriggerStatus
+from ophyd.areadetector.cam import AreaDetectorCam
+from ophyd.areadetector.detectors import DetectorBase
+from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
+from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
+from ophyd.device import FormattedComponent as FCpt
 from ophyd.device import DynamicDeviceComponent as DDC, Staged
-from ophyd.signal import (Signal, EpicsSignalRO, EpicsSignal)
-from ophyd.quadem import QuadEM
+from ophyd.utils import set_and_wait
+from ophyd.signal import (EpicsSignalRO, EpicsSignal)
 
 
-#TODO: fccd.hdf5.filestore_spec = 'BLAHBLAH'
+class IndirectTrigger(SingleTrigger):
+    def __init__(self, *args, **kwargs):
+        super(IndirectTrigger, self).__init__(*args, **kwargs)
 
+        # Force continuous mode when staging
+        self.stage_sigs.update([('cam.image_mode', 2)])
+
+
+# compare with stats_plugin.py in
+# https://github.com/NSLS-II-CSX/xf23id1_profiles/tree/master/profile_collection/startup/csx1/devices
 class StatsPluginCSX(PluginBase):
     """This supports changes to time series PV names in AD 3-3
 
@@ -168,7 +170,7 @@ class StatsPluginCSX(PluginBase):
     total = ADCpt(EpicsSignalRO, 'Total_RBV')
 
 
-class StandardCam(SingleTrigger, AreaDetector):
+class StandardCam(IndirectTrigger, AreaDetector):
     stats1 = Cpt(StatsPlugin, 'Stats1:')
     stats2 = Cpt(StatsPlugin, 'Stats2:')
     stats3 = Cpt(StatsPlugin, 'Stats3:')
@@ -182,7 +184,7 @@ class StandardCam(SingleTrigger, AreaDetector):
     # trans1 = Cpt(TransformPlugin, 'Trans1:')
 
 
-class NoStatsCam(SingleTrigger, AreaDetector):
+class NoStatsCam(IndirectTrigger, AreaDetector):
     pass
 
 
@@ -198,6 +200,9 @@ class HDF5PluginSWMR(HDF5Plugin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.stage_sigs['swmr_mode'] = 1
+        # Prevent overwriting num_capture on stage
+        del self.stage_sigs['num_capture']
+
 
 
 class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
@@ -220,10 +225,17 @@ class FCCDCam(AreaDetectorCam):
     fcric_gain = Cpt(EpicsSignalWithRBV, 'FCRICGain')
     fcric_clamp = Cpt(EpicsSignalWithRBV, 'FCRICClamp')
 
-    # temp = FCpt(EpicsSignal, '{self._temp_pv}')
+    readout_time = Cpt(EpicsSignal, 'ReadoutTime')
+
+    acquire_time = ADCpt(SignalWithRBV, 'AdjustedAcquireTime')
+    acquire_period = ADCpt(SignalWithRBV, 'AdjustedAcquirePeriod')
+    acquire = ADCpt(EpicsSignal, 'AdjustedAcquire')
+
+    initialize = ADCpt(EpicsSignal, 'Initialize')
+    shutdown = ADCpt(EpicsSignal, "Shutdown")
 
     def __init__(self, *args, temp_pv=None, **kwargs):
-        # self._temp_pv = temp_pv
+        self._temp_pv = temp_pv
         super().__init__(*args, **kwargs)
 
 
@@ -281,7 +293,7 @@ class ProductionCamBase(DetectorBase):
         return super().stage()
 
 
-class ProductionCamStandard(SingleTrigger, ProductionCamBase):
+class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
                write_path_template='/data/fccd_data/%Y/%m/%d/',
@@ -320,74 +332,27 @@ class ProductionCamStandard(SingleTrigger, ProductionCamBase):
         # file_number is *next* iteration
         res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
         self.hdf5._generate_resource(res_kwargs)
-        # can add this if we're not confident about setting...
-        # val = self.hdf5.capture.get()
-        # print("resuming FCCD")
-        # while (np.abs(val-set_val) > 1e-6):
-        # self.hdf5.capture.put(set_val)
-        # val = self.hdf5.capture.get()
-        # print("Success")
+
         return super().resume()
 
 
-class TriggeredCamExposure(Device):
-    def __init__(self, *args, **kwargs):
-        self._Tc = 0.004
-        self._To = 0.0035
-        self._readout = 0.080
-        super().__init__(*args, **kwargs)
+class DelayGenerator(Device):
+    trigger_on_off = Cpt(EpicsSignalWithRBV, 'TriggerEnabled')
+    delay_time = Cpt(EpicsSignalWithRBV,
+                     'ShutterOpenDelay')  # TODO: This (and all) default values should be set on the IOC!
+    initialize = Cpt(EpicsSignal, 'Initialize')
+    reset = Cpt(EpicsSignal, 'Reset')
 
-    def set(self, exp):
-        # Exposure time = 0
-        # Cycle time = 1
-
-        if exp[0] is not None:
-            Efccd = exp[0] + self._Tc + self._To
-            # To = start of FastCCD Exposure
-            aa = 0  # Shutter open
-            bb = Efccd - self._Tc + aa  # Shutter close
-            cc = self._To * 3  # diag6 gate start
-            dd = exp[0] - (self._Tc * 2)  # diag6 gate stop
-            ee = 0  # Channel Adv Start
-            ff = 0.001  # Channel Adv Stop
-            gg = self._To  # MCS Count Gate Start
-            hh = exp[0] + self._To  # MCS Count Gate Stop
-
-            # Set delay generator
-            self.parent.dg1.A.set(aa)
-            self.parent.dg1.B.set(bb)
-            self.parent.dg1.C.set(cc)
-            self.parent.dg1.D.set(dd)
-            self.parent.dg1.E.set(ee)
-            self.parent.dg1.F.set(ff)
-            self.parent.dg1.G.set(gg)
-            self.parent.dg1.H.set(hh)
-            self.parent.dg2.A.set(0)
-            self.parent.dg2.B.set(0.0005)
-
-            # Set AreaDetector
-            self.parent.cam.acquire_time.set(Efccd)
-
-        # Now do period
-        if exp[1] is not None:
-            if exp[1] < (Efccd + self._readout):
-                p = Efccd + self._readout
-            else:
-                p = exp[1]
-
-        self.parent.cam.acquire_period.set(p)
-
-        if exp[2] is not None:
-            self.parent.cam.num_images.set(exp[2])
-
-        return NullStatus()
-
-    def get(self):
-        return None
+    shutter_close_delay = Cpt(EpicsSignal, 'ShutterCloseDelay')
 
 
 class ProductionCamTriggered(ProductionCamStandard):
-    exposure = Cpt(TriggeredCamExposure, '')
+    dg1 = FCpt(DelayGenerator, '{self._dg1_prefix}')
+
+    # TODO: populate dg1_prefix using happi rather than hard coded value
+    def __init__(self, *args, dg1_prefix=None, **kwargs):
+        self._dg1_prefix = "ES7011:ShutterDelayGenerator:"
+        super().__init__(*args, **kwargs)
 
 
 class StageOnFirstTrigger(ProductionCamTriggered):

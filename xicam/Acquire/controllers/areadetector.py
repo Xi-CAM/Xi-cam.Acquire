@@ -14,6 +14,7 @@ from caproto._utils import CaprotoTimeoutError
 from ophyd.signal import ConnectionTimeoutError
 from pydm.widgets.line_edit import PyDMLineEdit
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
+from pydm.widgets.pushbutton import PyDMPushButton
 from bluesky.plans import count
 from timeit import default_timer
 from contextlib import contextmanager
@@ -49,14 +50,17 @@ class AreaDetectorController(ControllerPlugin):
         self.layout().addWidget(self.imageview)
         self.layout().addWidget(self.passive)
 
-        pvname = device.prefix
-      
         config_layout = QFormLayout()
-        config_layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:AcquireTime'))
-        config_layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
-        config_layout.addRow('Number of Exposures', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumExposures'))
-        config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:ImageMode'))
-        config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:TriggerMode'))
+        config_layout.addRow('Acquire Time',
+                             PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        config_layout.addRow('Acquire Period',
+                             PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
+        config_layout.addRow('Number of Images',
+                             PyDMLineEdit(init_channel=f'ca://{device.hdf5.num_capture.setpoint_pvname}'))
+        config_layout.addRow('Number of Exposures',
+                             PyDMLineEdit(init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}'))
+        # config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
+        # config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.trigger_mode.setpoint_pvname}'))
 
         config_panel = QGroupBox('Configuration')
         config_panel.setLayout(config_layout)
@@ -65,11 +69,17 @@ class AreaDetectorController(ControllerPlugin):
         acquire_button = QPushButton('Acquire')
         acquire_button.clicked.connect(self.acquire)
         acquire_layout.addWidget(acquire_button)
+        acquire_layout.addWidget(
+            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.initialize.setpoint_pvname}',
+                           label='Initialize'))
+        acquire_layout.addWidget(
+            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.shutdown.setpoint_pvname}', label='Shutdown'))
 
         acquire_panel = QGroupBox('Acquire')
         acquire_panel.setLayout(acquire_layout)
 
         hlayout = QHBoxLayout()
+
         hlayout.addWidget(config_panel)
         hlayout.addWidget(acquire_panel)
         self.layout().addLayout(hlayout)
@@ -94,9 +104,10 @@ class AreaDetectorController(ControllerPlugin):
 
         while True:
             try:
-                with msg.busyContext():
-                    msg.showMessage('Connecting to device...')
-                    self.device.wait_for_connection()
+                if not self.device.connected:
+                    with msg.busyContext():
+                        msg.showMessage('Connecting to device...')
+                        self.device.wait_for_connection()
 
                 # Do nothing unless this widget is visible
                 if not self.visibleRegion().isEmpty():
@@ -108,7 +119,7 @@ class AreaDetectorController(ControllerPlugin):
 
                     yield self.getFrame()
 
-            except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError) as ex:
+            except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
                 threads.invoke_in_main_thread(self.error_text.setText, 'An error occurred communicating with this device.')
                 msg.logError(ex)
 
