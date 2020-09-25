@@ -64,6 +64,10 @@ class QRunEngine(QObject):
         self.RE = RunEngine(context_managers=[], **kwargs)
         self.RE.subscribe(self.sigDocumentYield.emit)
 
+        # TODO: pull from settings plugin
+        from suitcase.mongo_normalized import Serializer
+        self.RE.subscribe(Serializer("mongodb://localhost:27017/mds", "mongodb://localhost:27017/fs"))
+
         self.queue = PriorityQueue()
 
         self.process_queue()
