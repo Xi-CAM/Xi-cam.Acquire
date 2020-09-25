@@ -1,5 +1,8 @@
 import time as ttime
 import itertools
+from collections import OrderedDict
+
+import numpy as np
 
 from ophyd import (Device,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
@@ -203,6 +206,33 @@ class HDF5PluginSWMR(HDF5Plugin):
         # Prevent overwriting num_capture on stage
         del self.stage_sigs['num_capture']
 
+    # TODO: check if this can be removed now
+    def warmup(self):
+        """
+        This method is overridden to use the num_capture/continuous mode with external triggering
+        """
+        set_and_wait(self.enable, 1)
+        sigs = OrderedDict([(self.parent.cam.array_callbacks, 1),
+                            (self.parent.cam.image_mode, 'Single'),
+                            (self.parent.cam.trigger_mode, 'Internal'),
+                            # (self.num_capture, 1),
+                            # just in case tha acquisition time is set very long...
+                            (self.parent.cam.acquire_time, 1),
+                            (self.parent.cam.acquire_period, 1), ])
+
+        original_vals = {sig: sig.get() for sig in sigs}
+
+        for sig, val in sigs.items():
+            ttime.sleep(0.1)  # abundance of caution
+            set_and_wait(sig, val)
+
+        ttime.sleep(2)  # wait for acquisition
+
+        for sig, val in reversed(list(original_vals.items())):
+            ttime.sleep(0.1)
+            set_and_wait(sig, val)
+
+
 
 
 class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
@@ -360,13 +390,15 @@ class StageOnFirstTrigger(ProductionCamTriggered):
 
     def __init__(self, *args, **kwargs):
         super(StageOnFirstTrigger, self).__init__(*args, **kwargs)
-        self._warmed_up = False
         self.trigger_staged = False
+
+    @property
+    def _warmed_up(self):
+        return np.array(self.hdf5.array_size.get()).sum() > 0
 
     def _trigger_stage(self):
         if not self._warmed_up:
             self.hdf5.warmup()
-            self._warmed_up = True
         self._acquisition_signal.subscribe(self._acquire_changed)
         return super(StageOnFirstTrigger, self).stage()
 
@@ -379,7 +411,7 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         self.trigger_staged = False
 
     def trigger(self):
-
+        set_and_wait(self.hdf5.capture, 1)
         if not self.trigger_staged:
             self._trigger_stage()
             self.trigger_staged = True
