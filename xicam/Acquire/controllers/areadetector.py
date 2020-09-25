@@ -111,11 +111,11 @@ class AreaDetectorController(ControllerPlugin):
 
                 # Do nothing unless this widget is visible
                 if not self.visibleRegion().isEmpty():
-                    # check if the object thinks its staged or is actually not staged
-                    if not self.device.trigger_staged or \
-                            self.device.image1.array_size.get() == (0, 0, 0):
-                        msg.showMessage('Staging the device...')
-                        self.device.trigger()
+                    # # check if the object thinks its staged or is actually not staged
+                    # if not self.device.trigger_staged or \
+                    #         self.device.image1.array_size.get() == (0, 0, 0):
+                    #     msg.showMessage('Staging the device...')
+                    #     self.device.trigger()
 
                     yield self.getFrame()
 
