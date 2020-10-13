@@ -1,13 +1,12 @@
 from xicam.plugins.dataresourceplugin import DataResourcePlugin
 from xicam.gui.widgets.dataresourcebrowser import *
 from xicam.plugins import manager as pluginmanager
-from bluesky import RunEngine
+from xicam.Acquire.runengine import get_run_engine
 from bluesky.plans import count
 from xicam.core.data import NonDBHeader
 from pydm.widgets.line_edit import PyDMLineEdit
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
 from qtpy.QtWidgets import QFormLayout, QDialog
-from xicam.Acquire.runengine import RE
 from xicam.core import msg, threads
 
 
@@ -90,7 +89,7 @@ class OphydDataResourcePlugin(DataResourcePlugin):
         self.config = {'scheme': scheme, 'host': 'Ophyd', 'path': path, 'user': user, 'password': password}
         super(OphydDataResourcePlugin, self).__init__(**self.config)
 
-        self.RE = RunEngine()
+        self.RE = get_run_engine()
 
     def pull(self, deviceitem):
 
@@ -104,7 +103,7 @@ class OphydDataResourcePlugin(DataResourcePlugin):
                 'datum': [],
                 'stop': []}
 
-        RE(count([deviceitem.device_obj]), lambda doctype, doc: docs[doctype].append(doc))
+        self.RE(count([deviceitem.device_obj]), lambda doctype, doc: docs[doctype].append(doc))
         return NonDBHeader(docs['start'][0], docs['descriptor'], docs['event'], docs['stop'][0])
 
     @threads.method

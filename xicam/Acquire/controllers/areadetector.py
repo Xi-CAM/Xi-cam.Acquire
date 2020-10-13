@@ -14,11 +14,12 @@ from caproto._utils import CaprotoTimeoutError
 from ophyd.signal import ConnectionTimeoutError
 from pydm.widgets.line_edit import PyDMLineEdit
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
+from pydm.widgets.pushbutton import PyDMPushButton
 from bluesky.plans import count
 from timeit import default_timer
 from contextlib import contextmanager
 # from xicam.SAXS.processing.correction import CorrectFastCCDImage
-from xicam.Acquire.runengine import RE
+from xicam.Acquire.runengine import get_run_engine
 import time
 
 
@@ -49,13 +50,17 @@ class AreaDetectorController(ControllerPlugin):
         self.layout().addWidget(self.imageview)
         self.layout().addWidget(self.passive)
 
-        pvname = device.pvname
         config_layout = QFormLayout()
-        config_layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:AcquireTime'))
-        config_layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumImages'))
-        config_layout.addRow('Number of Exposures', PyDMLineEdit(init_channel=f'ca://{pvname}cam1:NumExposures'))
-        config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:ImageMode'))
-        config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{pvname}cam1:TriggerMode'))
+        config_layout.addRow('Acquire Time',
+                             PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        config_layout.addRow('Acquire Period',
+                             PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
+        config_layout.addRow('Number of Images',
+                             PyDMLineEdit(init_channel=f'ca://{device.hdf5.num_capture.setpoint_pvname}'))
+        config_layout.addRow('Number of Exposures',
+                             PyDMLineEdit(init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}'))
+        # config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
+        # config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.trigger_mode.setpoint_pvname}'))
 
         config_panel = QGroupBox('Configuration')
         config_panel.setLayout(config_layout)
@@ -64,11 +69,17 @@ class AreaDetectorController(ControllerPlugin):
         acquire_button = QPushButton('Acquire')
         acquire_button.clicked.connect(self.acquire)
         acquire_layout.addWidget(acquire_button)
+        acquire_layout.addWidget(
+            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.initialize.setpoint_pvname}',
+                           label='Initialize'))
+        acquire_layout.addWidget(
+            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.shutdown.setpoint_pvname}', label='Shutdown'))
 
         acquire_panel = QGroupBox('Acquire')
         acquire_panel.setLayout(acquire_layout)
 
         hlayout = QHBoxLayout()
+
         hlayout.addWidget(config_panel)
         hlayout.addWidget(acquire_panel)
         self.layout().addLayout(hlayout)
@@ -93,22 +104,22 @@ class AreaDetectorController(ControllerPlugin):
 
         while True:
             try:
-                with msg.busyContext():
-                    if not self.device._device_obj:
-                        msg.showMessage('Instantiating device...')
-                        device = self.device.device_obj  # Force cache the device_obj
+                if not self.device.connected:
+                    with msg.busyContext():
+                        msg.showMessage('Connecting to device...')
+                        self.device.wait_for_connection()
 
                 # Do nothing unless this widget is visible
                 if not self.visibleRegion().isEmpty():
-                    # check if the object thinks its staged or is actually not staged
-                    if not self.device.device_obj.trigger_staged or \
-                            self.device.device_obj.image1.array_size.get() == (0,0,0):
-                        msg.showMessage('Staging the device...')
-                        self.device.device_obj.trigger()
+                    # # check if the object thinks its staged or is actually not staged
+                    # if not self.device.trigger_staged or \
+                    #         self.device.image1.array_size.get() == (0, 0, 0):
+                    #     msg.showMessage('Staging the device...')
+                    #     self.device.trigger()
 
                     yield self.getFrame()
 
-            except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError) as ex:
+            except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
                 threads.invoke_in_main_thread(self.error_text.setText, 'An error occurred communicating with this device.')
                 msg.logError(ex)
 
@@ -117,8 +128,8 @@ class AreaDetectorController(ControllerPlugin):
     def getFrame(self):
         try:
             if not self.passive.isChecked():
-                self.device.device_obj.trigger()
-            data = self.device.device_obj.image1.shaped_image.get()
+                self.device.trigger()
+            data = self.device.image1.shaped_image.get()
             # TODO: apply corrections to display; requires access to flats and darks
             # data = np.squeeze(CorrectFastCCDImage().asfunction(images=data,)['corrected_images'].value)
             return data
@@ -149,7 +160,7 @@ class AreaDetectorController(ControllerPlugin):
         self.error_text.setText('An error occurred while connecting to this device.')
 
     def acquire(self):
-        RE(count([self.device.device_obj]))
+        get_run_engine()(count([self.device]))
 
 
 # TODO: add visibility checking

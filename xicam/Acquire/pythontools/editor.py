@@ -4,7 +4,7 @@ from pyqode.core import panels, api, modes
 from pyqode.python import widgets, panels as pypanels, modes as pymodes
 from pyqode.python.backend import server
 from xicam.plugins import manager as pluginmanager
-from ..runengine import RE
+from ..runengine import get_run_engine
 from ..plans.planitem import PlanItem
 
 
@@ -30,6 +30,7 @@ class scripteditortoolbar(QToolBar):
 
         self.addAction('Run', self.Run)
         self.addAction('Save Plan', self.SavePlan)
+        self.RE = get_run_engine()
 
     def Run(self, script=None):
         if not script: script = self.editor.toPlainText()
@@ -37,7 +38,7 @@ class scripteditortoolbar(QToolBar):
         planitem = PlanItem('Temp', '', '', script)
         plan = planitem.plan
 
-        RE.put(plan)
+        self.RE.put(plan)
 
 
         # tmpdir = user_config_dir('xicam/tmp')
