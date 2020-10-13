@@ -6,7 +6,7 @@ from pyqtgraph.parametertree import ParameterTree, parameterTypes
 from xicam.gui.widgets.metadataview import MetadataWidget
 from functools import partial
 from xicam.core import threads
-from xicam.Acquire.runengine import RE
+from xicam.Acquire.runengine import get_run_engine
 
 empty_parameter = parameterTypes.GroupParameter(name='No parameters')
 
@@ -62,11 +62,13 @@ class RunEngineWidget(QWidget):
         self.abortbutton.clicked.connect(self.abort)
         self.pausebutton.clicked.connect(self.pause)
         self.resumebutton.clicked.connect(self.resume)
-        RE.sigPause.connect(self._paused)
-        RE.sigResume.connect(self._resumed)
-        RE.sigFinish.connect(self._finished)
-        RE.sigStart.connect(self._started)
-        RE.sigAbort.connect(self._aborted)
+
+        self.RE = get_run_engine()
+        self.RE.sigPause.connect(self._paused)
+        self.RE.sigResume.connect(self._resumed)
+        self.RE.sigFinish.connect(self._finished)
+        self.RE.sigStart.connect(self._started)
+        self.RE.sigAbort.connect(self._aborted)
 
         # Run model
         self.runmodel = QStandardItemModel()
@@ -85,13 +87,13 @@ class RunEngineWidget(QWidget):
         planitem.run(callback=partial(threads.invoke_in_main_thread, self.metadata.doc_consumer, force_event=True))
 
     def abort(self):
-        RE.abort('Aborted by Xi-cam user.')
+        self.RE.abort('Aborted by Xi-cam user.')
 
     def pause(self):
-        RE.pause()
+        self.RE.pause()
 
     def resume(self):
-        RE.resume()
+        self.RE.resume()
         self.resumebutton.setEnabled(False)
 
     def _resumed(self):
