@@ -240,7 +240,7 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
     file_number_sync = None
 
     def get_frames_per_point(self):
-        return self.parent.cam.num_images.get()
+        return self.num_capture.get()
 
     def make_filename(self):
         # stash this so that it is available on resume
