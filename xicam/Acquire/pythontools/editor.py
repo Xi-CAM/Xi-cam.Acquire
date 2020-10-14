@@ -4,7 +4,7 @@ from pyqode.core import panels, api, modes
 from pyqode.python import widgets, panels as pypanels, modes as pymodes
 from pyqode.python.backend import server
 from xicam.plugins import manager as pluginmanager
-from ..runengine import RE
+from ..runengine import get_run_engine
 from ..plans.planitem import PlanItem
 
 
@@ -30,6 +30,7 @@ class scripteditortoolbar(QToolBar):
 
         self.addAction('Run', self.Run)
         self.addAction('Save Plan', self.SavePlan)
+        self.RE = get_run_engine()
 
     def Run(self, script=None):
         if not script: script = self.editor.toPlainText()
@@ -37,7 +38,7 @@ class scripteditortoolbar(QToolBar):
         planitem = PlanItem('Temp', '', '', script)
         plan = planitem.plan
 
-        RE.put(plan)
+        self.RE.put(plan)
 
 
         # tmpdir = user_config_dir('xicam/tmp')
@@ -56,7 +57,7 @@ class scripteditortoolbar(QToolBar):
         # subprocess.call([sys.executable, tmppath])
 
     def SavePlan(self):
-        pluginmanager.getPluginByName('xicam.Acquire.plans', 'SettingsPlugin').plugin_object.add_plan(
+        pluginmanager.get_plugin_by_name('plans', 'SettingsPlugin').add_plan(
             self.editor.toPlainText())
 
 
@@ -76,9 +77,9 @@ class scripteditoritem(widgets.PyCodeEditBase):
         self.panels.append(panels.FoldingPanel())
         self.panels.append(panels.LineNumberPanel())
         self.panels.append(panels.CheckerPanel())
-        self.panels.append(panels.SearchAndReplacePanel(),
-                           panels.SearchAndReplacePanel.Position.BOTTOM)
-        self.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
+        # self.panels.append(panels.SearchAndReplacePanel(),
+        #                    panels.SearchAndReplacePanel.Position.BOTTOM)
+        # self.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
         # add a context menu separator between editor's
         # builtin action and the python specific actions
         self.add_separator()

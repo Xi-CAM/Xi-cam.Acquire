@@ -7,8 +7,6 @@ from xicam.plugins import SettingsPlugin, manager
 from xicam.plugins import manager as pluginmanager
 from .planitem import PlanItem
 
-from ophyd.sim import SynAxis
-
 
 class PlanSettingsPlugin(SettingsPlugin):
     """
@@ -34,7 +32,7 @@ class PlanSettingsPlugin(SettingsPlugin):
                                      self.remove_plan)
         self.widget.layout().addWidget(self.listview)
         self.widget.layout().addWidget(self.plugintoolbar)
-        super(PlanSettingsPlugin, self).__init__(QIcon(str(path('icons/controlpanel.png'))),
+        super(PlanSettingsPlugin, self).__init__(QIcon(str(path('icons/bluesky.png'))),
                                                  'Plans',
                                                  self.widget)
 

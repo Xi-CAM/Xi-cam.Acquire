@@ -1,4 +1,4 @@
-from qtpy.QtWidgets import QWidget, QGridLayout, QListView, QPushButton, QSplitter, QVBoxLayout
+from qtpy.QtWidgets import QWidget, QListView, QPushButton, QSplitter, QVBoxLayout
 from qtpy.QtCore import QItemSelectionModel, Qt
 from qtpy.QtGui import QStandardItemModel
 from xicam.plugins import manager as pluginmanager
@@ -6,7 +6,7 @@ from pyqtgraph.parametertree import ParameterTree, parameterTypes
 from xicam.gui.widgets.metadataview import MetadataWidget
 from functools import partial
 from xicam.core import threads
-from xicam.Acquire.runengine import RE
+from xicam.Acquire.runengine import get_run_engine
 
 empty_parameter = parameterTypes.GroupParameter(name='No parameters')
 
@@ -16,8 +16,8 @@ class RunEngineWidget(QWidget):
         super(RunEngineWidget, self).__init__(*args, **kwargs)
 
         self.planview = QListView()
-        self.plansmodel = pluginmanager.getPluginByName('xicam.Acquire.plans',
-                                                        'SettingsPlugin').plugin_object.plansmodel  # type: QStandardItemModel
+        self.plansmodel = pluginmanager.get_plugin_by_name('plans',
+                                                           'SettingsPlugin').plansmodel  # type: QStandardItemModel
         self.planview.setModel(self.plansmodel)
         self.selectionmodel = QItemSelectionModel(self.plansmodel)
         self.planview.setSelectionModel(self.selectionmodel)
@@ -31,8 +31,6 @@ class RunEngineWidget(QWidget):
         self.resumebutton = QPushButton('Resume')
         self.abortbutton = QPushButton('Abort')
         self.abortbutton.setStyleSheet('background-color:red;color:white;font-weight:bold;')
-        self._resumed()
-        self._finished()
 
         # Layout
         self.layout = QVBoxLayout()
@@ -54,24 +52,32 @@ class RunEngineWidget(QWidget):
         self.splitter.addWidget(self.runwidget)
         self.splitter.addWidget(self.metadata)
 
+        # Set initial states
+        self._resumed()
+        self._finished()
+
         # Wireup signals
         self.selectionmodel.currentChanged.connect(self.showPlan)
         self.runbutton.clicked.connect(self.run)
         self.abortbutton.clicked.connect(self.abort)
         self.pausebutton.clicked.connect(self.pause)
         self.resumebutton.clicked.connect(self.resume)
-        RE.sigPause.connect(self._paused)
-        RE.sigResume.connect(self._resumed)
-        RE.sigFinish.connect(self._finished)
-        RE.sigStart.connect(self._started)
-        RE.sigAbort.connect(self._aborted)
+
+        self.RE = get_run_engine()
+        self.RE.sigPause.connect(self._paused)
+        self.RE.sigResume.connect(self._resumed)
+        self.RE.sigFinish.connect(self._finished)
+        self.RE.sigStart.connect(self._started)
+        self.RE.sigAbort.connect(self._aborted)
 
         # Run model
         self.runmodel = QStandardItemModel()
         self.runselectionmodel = QItemSelectionModel(self.runmodel)
+        self._current_planitem = None
 
     def showPlan(self, current, previous):
         planitem = self.plansmodel.itemFromIndex(current).data(Qt.UserRole)
+        self._current_planitem = planitem
         self.parameterview.setParameters(getattr(planitem.plan, 'parameter', empty_parameter), showTop=False)
 
     def run(self):
@@ -81,13 +87,13 @@ class RunEngineWidget(QWidget):
         planitem.run(callback=partial(threads.invoke_in_main_thread, self.metadata.doc_consumer, force_event=True))
 
     def abort(self):
-        RE.abort('Aborted by Xi-cam user.')
+        self.RE.abort('Aborted by Xi-cam user.')
 
     def pause(self):
-        RE.pause()
+        self.RE.pause()
 
     def resume(self):
-        RE.resume()
+        self.RE.resume()
         self.resumebutton.setEnabled(False)
 
     def _resumed(self):

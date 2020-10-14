@@ -7,14 +7,13 @@ from copy import deepcopy
 from collections import namedtuple
 
 from xicam.plugins import SettingsPlugin, manager
-from xicam.plugins import cammart
 from collections import namedtuple
 from xicam.plugins import manager as pluginmanager
 from .device import Device
-from .fastccd import FastCCD
+from .fastccd import FastCCD, DelayGenerator
 from .areadetector import AreaDetector, PilatusDetector
 
-from ophyd import EpicsMotor
+from ophyd import EpicsMotor, EpicsSignalWithRBV, EpicsSignal
 
 
 class DeviceSettingsPlugin(SettingsPlugin):
@@ -86,7 +85,8 @@ class DeviceDialog(QDialog):
     sigConnect = Signal(str)
 
     deviceclasses = {'Fast CCD': FastCCD, 'Epics Motor': EpicsMotor, 'Simple Area Detector (Generic)': AreaDetector,
-                     'Pilatus Detector': PilatusDetector}
+                     'Pilatus Detector': PilatusDetector, 'Epics Signal': EpicsSignal,
+                     'Epics Signal (w/Readback)': EpicsSignalWithRBV, 'Delay Generator': DelayGenerator}
 
     def __init__(self):
         super(DeviceDialog, self).__init__()
@@ -110,8 +110,8 @@ class DeviceDialog(QDialog):
 
         # TODO: add controller plugin
         # Temporary hard coded values
-        for plugin in pluginmanager.getPluginsOfCategory('ControllerPlugin'):
-            self.controller.addItem(plugin.name)
+        for plugin in pluginmanager.get_plugins_of_type('ControllerPlugin'):
+            self.controller.addItem(plugin.name())
 
         # Setup dialog buttons
         self.addButton = QPushButton("&Add")
@@ -195,6 +195,8 @@ class DeviceItem(QStandardItem):
     def widget(self):
         if not self._widget:
             controllername = self.device.controller
-            controllerclass = pluginmanager.getPluginByName(controllername, 'ControllerPlugin').plugin_object
+            controllerclass = pluginmanager.get_plugin_by_name(controllername, 'ControllerPlugin')
+            if not controllerclass:
+                raise ImportError(f"The '{controllername}' controller could not be loaded.")
             self._widget = controllerclass(self.device)
         return self._widget

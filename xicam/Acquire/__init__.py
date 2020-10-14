@@ -1,18 +1,16 @@
+from . import patches
+
 import numpy as np
-from qtpy.QtCore import *
-from qtpy.QtGui import *
-from qtpy.QtWidgets import *
+from qtpy.QtCore import Signal
+from qtpy.QtWidgets import QStackedWidget
 
-from xicam.core import msg
-from xicam.core.data import load_header, NonDBHeader
-
-from xicam.plugins import GUIPlugin, GUILayout, manager as pluginmanager
+from xicam.plugins import GUIPlugin, GUILayout
 from .pythontools.editor import scripteditor
 from .controlwidgets.BCSConnector import BCSConnector
-from .controlwidgets.devicelist import DeviceList
+from .controlwidgets.deviceview import DeviceView
 from .controlwidgets import RunEngineWidget
 
-from .runengine import RE
+from . import runengine
 
 
 class AcquirePlugin(GUIPlugin):
@@ -20,7 +18,9 @@ class AcquirePlugin(GUIPlugin):
     sigLog = Signal(int, str, str, np.ndarray)
 
     def __init__(self):
-        devicelist = DeviceList()
+        runengine.initialize()
+        deviceviewcontainer = DeviceView()
+        devicelist = deviceviewcontainer.view
         controlsstack = QStackedWidget()
         devicelist.sigShowControl.connect(controlsstack.addSetWidget)
 

@@ -10,20 +10,18 @@ class PlanItem(object):
         self.icon = icon
         self.params = params
         self.code = code
+        self._plan = plan
 
     @property
     def plan(self):
-        plan_path = os.path.join(user_cache_dir(appname='xicam'), 'temp_plan.py')
+        if self._plan is None and self.code:
+            exec_locals = dict()
 
-        with open(plan_path, 'w') as plan_file:
-            plan_file.write(self.code)
+            # the code is expected to set "plan" to a plan
+            exec(self.code, exec_locals)
 
-        spec = importlib.util.spec_from_file_location("temp_plan", plan_path)
-        temp_plan = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(temp_plan)
-
-        plan = temp_plan.plan
-        return plan
+            self._plan = exec_locals['plan']
+        return self._plan
 
     @property
     def parameter(self):
