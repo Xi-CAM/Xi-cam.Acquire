@@ -183,8 +183,3 @@ class AreaDetectorController(ControllerPlugin):
 
     def acquire(self):
         self.RE(count([self.device]))
-
-
-# TODO: add visibility checking
-# not widget.visibleRegion().isEmpty():
-#             return True
