@@ -15,7 +15,6 @@ class PlanItem(object):
     @property
     def plan(self):
         if self._plan is None and self.code:
-
             exec_locals = dict()
 
             # the code is expected to set "plan" to a plan

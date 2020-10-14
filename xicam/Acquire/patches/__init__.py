@@ -4,7 +4,6 @@ from qtpy.QtWidgets import QApplication
 from qtpy import QtWidgets, QtCore, QtNetwork, QtGui
 from pyqode import qt
 
-
 Qt_packages = {'QtWidgets': QtWidgets,
                'QtCore': QtCore,
                'QtNetwork': QtNetwork,
@@ -13,14 +12,13 @@ Qt_packages = {'QtWidgets': QtWidgets,
 whitelist = ['qApp', 'Signal']
 
 for subpackage_name, subpackage in Qt_packages.items():
-
     setattr(qt, subpackage_name, subpackage)
     sys.modules[f"pyqode.qt.{subpackage_name}"] = subpackage
 
 import builtins
-if getattr(builtins, 'qApp', None):
-    QtWidgets.qApp = qApp    # qApp is inserted in builtins by PySide2
 
+if getattr(builtins, 'qApp', None):
+    QtWidgets.qApp = qApp  # qApp is inserted in builtins by PySide2
 
 from pyqode.core.api.client import JsonTcpClient, comm  # Must be a late import
 
@@ -40,6 +38,7 @@ def _read_header(self):
         self._to_read = header[0]
         self._header_buf = bytes()
         comm('header content: %d', self._to_read)
+
 
 JsonTcpClient._read_header = _read_header
 
