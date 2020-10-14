@@ -73,20 +73,15 @@ class AreaDetectorController(ControllerPlugin):
         acquire_button = QPushButton('Acquire')
         acquire_button.clicked.connect(self.acquire)
         acquire_layout.addWidget(acquire_button)
-        acquire_layout.addWidget(
-            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.initialize.setpoint_pvname}',
-                           label='Initialize'))
-        acquire_layout.addWidget(
-            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.shutdown.setpoint_pvname}', label='Shutdown'))
 
         acquire_panel = QGroupBox('Acquire')
         acquire_panel.setLayout(acquire_layout)
 
-        hlayout = QHBoxLayout()
+        self.hlayout = QHBoxLayout()
 
-        hlayout.addWidget(config_panel)
-        hlayout.addWidget(acquire_panel)
-        self.layout().addLayout(hlayout)
+        self.hlayout.addWidget(config_panel)
+        self.hlayout.addWidget(acquire_panel)
+        self.layout().addLayout(self.hlayout)
 
         # WIP
         # self.lutCheck = QCheckBox()
