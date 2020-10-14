@@ -130,6 +130,7 @@ class QRunEngine(QObject):
 
 RE = None
 
+
 def initialize():
     global RE
 

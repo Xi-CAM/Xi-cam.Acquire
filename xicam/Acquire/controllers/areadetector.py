@@ -9,13 +9,16 @@ from xicam.plugins import ControllerPlugin
 from functools import partial
 from xicam.core import msg
 from xicam.gui.widgets.dynimageview import DynImageView
-from xicam.gui.widgets.imageviewmixins import PixelCoordinates, Crosshair, BetterButtons, LogScaleIntensity, ImageViewHistogramOverflowFix
+from xicam.gui.widgets.imageviewmixins import PixelCoordinates, Crosshair, BetterButtons, LogScaleIntensity, \
+    ImageViewHistogramOverflowFix
 from caproto._utils import CaprotoTimeoutError
 from ophyd.signal import ConnectionTimeoutError
 from pydm.widgets.line_edit import PyDMLineEdit
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
 from pydm.widgets.pushbutton import PyDMPushButton
 from bluesky.plans import count
+import ophyd
+from xicam.Acquire.runengine import RE
 from timeit import default_timer
 from contextlib import contextmanager
 # from xicam.SAXS.processing.correction import CorrectFastCCDImage
@@ -35,10 +38,11 @@ class ADImageView(DynImageView,
 class AreaDetectorController(ControllerPlugin):
     viewclass = ADImageView
 
-    def __init__(self, device, maxfps=1):
+    def __init__(self, device, maxfps=10):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
         self._autolevel = True
+        self.RE = get_run_engine()
 
         self.setLayout(QVBoxLayout())
 
@@ -91,55 +95,71 @@ class AreaDetectorController(ControllerPlugin):
         # self.scaleCheck = QCheckBox()
         # self.rgbLevelsCheck = QCheckBox()
 
+        self.thread = None
         self._last_timestamp = time.time()
 
-        self.thread = threads.QThreadFutureIterator(self.update,
-                                                    showBusy=False,
-                                                    callback_slot=self.setFrame,
-                                                    except_slot=self.setError,
-                                                    threadkey=f'device-updater-{self.device.name}')
-        self.thread.start()
+        self.device.image1.shaped_image.subscribe(partial(threads.invoke_in_main_thread, self.setFrame))
+
+        self.passive.toggled.connect(self.setPassive)
 
     def update(self):
+        self.thread = threads.QThreadFuture(self.getFrame, showBusy=False,
+                                            callback_slot=partial(self.setFrame, autoLevels=self._autolevel),
+                                            except_slot=self.setError)
+        self.thread.start()
 
+    def _trigger_thread(self):
         while True:
+            while 1. / (time.time() - self._last_timestamp) > self.maxfps:
+                time.sleep(1. / self.maxfps)
+
+            if self.passive.isChecked() or self.visibleRegion().isEmpty():
+                break
+
             try:
                 if not self.device.connected:
                     with msg.busyContext():
                         msg.showMessage('Connecting to device...')
                         self.device.wait_for_connection()
 
-                # Do nothing unless this widget is visible
-                if not self.visibleRegion().isEmpty():
-                    # # check if the object thinks its staged or is actually not staged
-                    # if not self.device.trigger_staged or \
-                    #         self.device.image1.array_size.get() == (0, 0, 0):
-                    #     msg.showMessage('Staging the device...')
-                    #     self.device.trigger()
-
-                    yield self.getFrame()
-
+                self.device.device_obj.trigger()
             except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
-                threads.invoke_in_main_thread(self.error_text.setText, 'An error occurred communicating with this device.')
+                threads.invoke_in_main_thread(self.error_text.setText,
+                                              'An error occurred communicating with this device.')
                 msg.logError(ex)
 
-            time.sleep(1./self.maxfps)
+    def setPassive(self, passive):
+        if passive:
+            if self.thread:
+                self.thread.cancel()
+                self.thread = None
+        else:
+            self.thread = threads.QThreadFuture(self._trigger_thread,
+                                                except_slot=lambda ex: self.device.device_obj.unstage())
+            self.thread.start()
 
     def getFrame(self):
         try:
             if not self.passive.isChecked():
-                self.device.trigger()
-            data = self.device.image1.shaped_image.get()
-            # TODO: apply corrections to display; requires access to flats and darks
-            # data = np.squeeze(CorrectFastCCDImage().asfunction(images=data,)['corrected_images'].value)
-            return data
-        except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError) as ex:
-            threads.invoke_in_main_thread(self.error_text.setText, 'An error occurred communicating with this device.')
+                self.device.device_obj.trigger()
+            return self.device.device_obj.image1.shaped_image.get()
+        except (RuntimeError, CaprotoTimeoutError) as ex:
             msg.logError(ex)
         return None
 
-    def setFrame(self, image, *args, **kwargs):
-        if image is not None:
+    def setFrame(self, value=None, **kwargs):
+        image = value
+
+        if image is None:
+            return
+
+        # # Never exceed maxfps
+        # if 1. / (time.time() - self._last_timestamp) > self.maxfps:
+        #     return
+
+        if self.imageview.image is None:
+            self.imageview.setImage(image, autoHistogramRange=True, autoLevels=True)
+        else:
             self.imageview.imageDisp = None
             self.error_text.setText('')
             self.imageview.image = image
@@ -152,17 +172,14 @@ class AreaDetectorController(ControllerPlugin):
 
             self._autolevel = False
 
-            self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.2f}')
+        self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.2f}')
         self._last_timestamp = time.time()
+
+        # self.timer.singleShot(1. / self.maxfps * 1000, self.update)
 
     def setError(self, exception: Exception):
         msg.logError(exception)
         self.error_text.setText('An error occurred while connecting to this device.')
 
     def acquire(self):
-        get_run_engine()(count([self.device]))
-
-
-# TODO: add visibility checking
-# not widget.visibleRegion().isEmpty():
-#             return True
+        self.RE(count([self.device]))

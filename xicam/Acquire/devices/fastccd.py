@@ -423,12 +423,3 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         return super().trigger()
 
 FastCCD = StageOnFirstTrigger
-
-
-class trigger_rateDevice(ophyd.Device):
-    setpoint = Cpt(EpicsSignal, '', doc='TriggerRate')
-    readback = Cpt(EpicsSignalRO, '_RBV', doc='TriggerRate')
-
-
-class DelayGenerator(ophyd.Device):
-    trigger_rate = Cpt(trigger_rateDevice, 'trigger_rate', doc='TriggerRate')
