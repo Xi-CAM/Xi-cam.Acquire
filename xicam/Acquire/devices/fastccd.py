@@ -22,9 +22,11 @@ from ophyd.areadetector.base import (ADBase, ADComponent as ADCpt, ad_group,
 from ophyd.areadetector.plugins import PluginBase
 from ophyd.device import DynamicDeviceComponent as DDC, Staged
 
-import ophyd
+import bluesky.plan_stubs as bps
+import bluesky_darkframes
 from ophyd.utils import set_and_wait
 from ophyd.signal import (EpicsSignalRO, EpicsSignal)
+from ..runengine import get_run_engine
 
 
 class IndirectTrigger(SingleTrigger):
@@ -372,7 +374,8 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
 
 
 class DelayGenerator(Device):
-    trigger_on_off = Cpt(EpicsSignalWithRBV, 'TriggerEnabled')
+    trigger_enabled = Cpt(EpicsSignalWithRBV, 'TriggerEnabled')
+    shutter_enabled = Cpt(EpicsSignalWithRBV, 'ShutterEnabled')
     delay_time = Cpt(EpicsSignalWithRBV,
                      'ShutterOpenDelay')  # TODO: This (and all) default values should be set on the IOC!
     initialize = Cpt(EpicsSignal, 'Initialize')
@@ -409,6 +412,7 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         return super(StageOnFirstTrigger, self).stage()
 
     def stage(self):
+        set_and_wait(self.dg1.shutter_enabled, True)
         return [self]
 
     def unstage(self):
@@ -424,4 +428,51 @@ class StageOnFirstTrigger(ProductionCamTriggered):
 
         return super().trigger()
 
-FastCCD = StageOnFirstTrigger
+
+def dark_plan(detector):
+    # Restage to ensure that dark frames goes into a separate file.
+    yield from bps.unstage(detector)
+    yield from bps.stage(detector)
+    yield from bps.mv(detector.dg1.shutter_enabled, False)
+    # The `group` parameter passed to trigger MUST start with
+    # bluesky-darkframes-trigger.
+    yield from bps.trigger(detector, group='bluesky-darkframes-trigger')
+    yield from bps.wait('bluesky-darkframes-trigger')
+    snapshot = bluesky_darkframes.SnapshotDevice(detector)
+    yield from bps.mv(detector.dg1.shutter_enabled, True)
+    # Restage.
+    yield from bps.unstage(detector)
+    yield from bps.stage(detector)
+    return snapshot
+
+
+class DarkFrameFCCD(StageOnFirstTrigger):
+    def __init__(self):
+        run_engine = get_run_engine()
+
+        # Always take a fresh dark frame at the beginning of each run.
+        dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+            dark_plan=dark_plan, detector=self, max_age=0)
+
+        # # Take a dark frame if the last one we took is more than 30 seconds old.
+        # dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+        #     dark_plan=dark_plan, detector=self, max_age=30)
+        #
+        # # Take a fresh dark frame if the last one we took *with this exposure time*
+        # # is more than 30 seconds old.
+        # dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+        #     dark_plan=dark_plan, detector=det, max_age=30,
+        #     locked_signals=[det.exposure_time])
+        #
+        # # Always take a new dark frame if the exposure time was changed from the
+        # # previous run, even if we took one with this exposure time on some earlier
+        # # run. Also, re-take if the settings haven't changed but the last dark
+        # # frame is older than 30 seconds.
+        # dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+        #     dark_plan=dark_plan, detector=det, max_age=30,
+        #     locked_signals=[det.exposure_time], limit=1)
+
+        run_engine.RE.preprocessors.append(dark_frame_preprocessor)
+
+
+FastCCD = DarkFrameFCCD
