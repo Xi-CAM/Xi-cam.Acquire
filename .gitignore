@@ -129,3 +129,9 @@ target/
 # sphinx
 doc/source/generated/*.rst
 .pytest_cache
+
+.DS_Store
+*.edf
+*.nxs
+*.csv
+*.tif

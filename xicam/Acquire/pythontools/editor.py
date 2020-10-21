@@ -1,13 +1,12 @@
-import os, sys
-import stat
+
 from qtpy.QtWidgets import *
 from pyqode.core import panels, api, modes
 from pyqode.python import widgets, panels as pypanels, modes as pymodes
 from pyqode.python.backend import server
-from functools import partial
-from xicam.gui.threads import QThreadFuture
-import subprocess
-from appdirs import user_config_dir
+from xicam.plugins import manager as pluginmanager
+from ..runengine import get_run_engine
+from ..plans.planitem import PlanItem
+
 
 class scripteditor(QWidget):
     def __init__(self):
@@ -30,13 +29,16 @@ class scripteditortoolbar(QToolBar):
         self.editor = editor
 
         self.addAction('Run', self.Run)
-        self.addAction('Create Action', self.CreateAction)
+        self.addAction('Save Plan', self.SavePlan)
+        self.RE = get_run_engine()
 
     def Run(self, script=None):
         if not script: script = self.editor.toPlainText()
 
-        self._runthread = QThreadFuture(partial(exec, script))
-        self._runthread.start()
+        planitem = PlanItem('Temp', '', '', script)
+        plan = planitem.plan
+
+        self.RE.put(plan)
 
 
         # tmpdir = user_config_dir('xicam/tmp')
@@ -54,10 +56,9 @@ class scripteditortoolbar(QToolBar):
         #
         # subprocess.call([sys.executable, tmppath])
 
-
-    def CreateAction(self):
-        p = partial(self.Run, self.editor.toPlainText())
-        self.addAction('Custom Action', p)
+    def SavePlan(self):
+        pluginmanager.get_plugin_by_name('plans', 'SettingsPlugin').add_plan(
+            self.editor.toPlainText())
 
 
 class scripteditoritem(widgets.PyCodeEditBase):
@@ -76,9 +77,9 @@ class scripteditoritem(widgets.PyCodeEditBase):
         self.panels.append(panels.FoldingPanel())
         self.panels.append(panels.LineNumberPanel())
         self.panels.append(panels.CheckerPanel())
-        self.panels.append(panels.SearchAndReplacePanel(),
-                           panels.SearchAndReplacePanel.Position.BOTTOM)
-        self.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
+        # self.panels.append(panels.SearchAndReplacePanel(),
+        #                    panels.SearchAndReplacePanel.Position.BOTTOM)
+        # self.panels.append(panels.EncodingPanel(), api.Panel.Position.TOP)
         # add a context menu separator between editor's
         # builtin action and the python specific actions
         self.add_separator()
@@ -112,29 +113,23 @@ class scripteditoritem(widgets.PyCodeEditBase):
         QApplication.instance().aboutToQuit.connect(self.cleanup)  # TODO: use this approach in Xi-cam
 
         # self.file.open('test.py')
-        self.insertPlainText('''
-# Required to allow controls manipulation in background
-import asyncio
-# Setup RunEngine
-from bluesky import RunEngine
-from bluesky.plans import scan
+        self.insertPlainText('''from bluesky.plans import scan
 from ophyd.sim import det4, motor1, motor2, motor3
+from pyqtgraph.parametertree.parameterTypes import SimpleParameter
+from xicam.gui.utils import ParameterizablePlan
 
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
+min1 = SimpleParameter(name='Axis 1 Min', type='float')
+min2 = SimpleParameter(name='Axis 2 Min', type='float')
+max2 = SimpleParameter(name='Axis 2 Max', type='float')
+max1 = SimpleParameter(name='Axis 1 Max', type='float')
+steps = SimpleParameter(name='Steps', type='int')
 
-RE = RunEngine({}, context_managers=[], loop=loop)
+scan = ParameterizablePlan(scan)
 
-# Set up simulated hardware.
-
-# The 'det4' example detector a 2D Gaussian function of motor1, motor2.
-
-# Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
-RE(scan([det4],
-        motor1, 1, 5,
-        motor2, 10, 50,
-        5),
-   print)
+plan = scan([det4],
+            motor1, min1, max1,
+            motor2, min2, max2,
+            steps)
 
 ''')
 

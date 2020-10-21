@@ -9,7 +9,7 @@ Usage: pip install -e .
 from setuptools import setup
 
 setup(
-    name='xicam.plugins.Acquire',
+    name='xicam.Acquire',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
@@ -55,7 +55,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=['xicam.plugins.Acquire'],
+    packages=['xicam.Acquire'],
 
     package_dir={},
 
@@ -67,7 +67,11 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'pyqode.python'],
+    install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'happi',
+                      'ipykernel!=5.0*,!=5.1.0', 'pyqode.python', 'typhos', 'pydm', 'caproto',
+                      # 'git+https://github.com/pcdshub/typhos.git',
+                      # 'git+https://github.com/pcdshub/happi.git'  # ipykernel has faulty releases
+                      ],
 
     setup_requires=[],
 
@@ -83,7 +87,7 @@ setup(
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these
     # have to be included in MANIFEST.in as well.
-    package_data={'xicam.plugins.Acquire': ['*.yapsy-plugin']},
+    package_data={},
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
@@ -95,7 +99,18 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    entry_points={},
+    entry_points={'xicam.plugins.ControllerPlugin': [
+        'areadetector = xicam.Acquire.controllers.areadetector:AreaDetectorController',
+        'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
+        'fastccd_controller = xicam.Acquire.controllers.fastccd_controller:FastCCDController',
+        'typhos = xicam.Acquire.controllers.typhoscontroller:TyphosController'],
+        'xicam.plugins.DataResourcePlugin': [
+            'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
+            'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
+        'xicam.plugins.SettingsPlugin': ['devices = xicam.Acquire.devices:DeviceSettingsPlugin',
+                                         'happi_devices = xicam.Acquire.devices.happi:HappiSettingsPlugin',
+                                         'plans = xicam.Acquire.plans:PlanSettingsPlugin'],
+        'xicam.plugins.GUIPlugin': ['acquire = xicam.Acquire:AcquirePlugin']},
 
     ext_modules=[],
     include_package_data=True
