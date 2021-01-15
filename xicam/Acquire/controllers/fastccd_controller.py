@@ -1,3 +1,7 @@
+import numpy as np
+
+from databroker import Broker
+from databroker.core import BlueskyRun
 from pydm.widgets import PyDMPushButton, PyDMLabel
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout
 from .areadetector import AreaDetectorController
@@ -33,3 +37,22 @@ class FastCCDController(AreaDetectorController):
 
         self.hlayout.addWidget(camera_panel)
         self.hlayout.addWidget(dg_panel)
+
+        # TODO: pull from settingsplugin
+        self.db = Broker.named('local').v2
+
+    # def preprocess(self, image):
+    #
+    #     try:
+    #         dark = self.get_dark(self.db[-1])  # TODO: Look back a few runs for the dark frame
+    #         return image-dark
+    #     except AttributeError:
+    #         return image
+
+    def get_dark(self, run_catalog: BlueskyRun):
+        return np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
+
+    def setPassive(self, passive: bool):
+        if self.RE.isIdle:
+            ...
+            # self.device.
