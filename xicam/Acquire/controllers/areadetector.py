@@ -30,7 +30,7 @@ class ADImageView(DynImageView,
                   PixelCoordinates,
                   Crosshair,
                   BetterButtons,
-                  # LogScaleIntensity,
+                  LogScaleIntensity,
                   ImageViewHistogramOverflowFix):
     pass
 
@@ -38,9 +38,10 @@ class ADImageView(DynImageView,
 class AreaDetectorController(ControllerPlugin):
     viewclass = ADImageView
 
-    def __init__(self, device, maxfps=10):
+    def __init__(self, device, preprocess_enabled=True, maxfps=10):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
+        self.preprocess_enabled = True
         self._autolevel = True
         self.RE = get_run_engine()
 
@@ -49,7 +50,7 @@ class AreaDetectorController(ControllerPlugin):
         self.imageview = self.viewclass()
         self.passive = QCheckBox('Passive Mode')
         self.passive.setChecked(True)
-        self.error_text = pg.TextItem('Connecting to device...')
+        self.error_text = pg.TextItem('Waiting for data...')
         self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
         self.layout().addWidget(self.passive)
@@ -117,7 +118,7 @@ class AreaDetectorController(ControllerPlugin):
                         msg.showMessage('Connecting to device...')
                         self.device.wait_for_connection()
 
-                self.device.device_obj.trigger()
+                self.device.trigger()
             except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'An error occurred communicating with this device.')
@@ -152,6 +153,8 @@ class AreaDetectorController(ControllerPlugin):
         # if 1. / (time.time() - self._last_timestamp) > self.maxfps:
         #     return
 
+        image = self.preprocess(image)
+
         if self.imageview.image is None:
             self.imageview.setImage(image, autoHistogramRange=True, autoLevels=True)
         else:
@@ -171,6 +174,9 @@ class AreaDetectorController(ControllerPlugin):
         self._last_timestamp = time.time()
 
         # self.timer.singleShot(1. / self.maxfps * 1000, self.update)
+
+    def preprocess(self, image):
+        return image
 
     def setError(self, exception: Exception):
         msg.logError(exception)
