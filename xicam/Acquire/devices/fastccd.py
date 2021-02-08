@@ -376,7 +376,6 @@ class DelayGenerator(Device):
                      'ShutterOpenDelay')  # TODO: This (and all) default values should be set on the IOC!
     initialize = Cpt(EpicsSignal, 'Initialize')
     reset = Cpt(EpicsSignal, 'Reset')
-
     shutter_close_delay = Cpt(EpicsSignal, 'ShutterCloseDelay')
 
 
