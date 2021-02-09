@@ -224,7 +224,8 @@ class HDF5PluginSWMR(HDF5Plugin):
                             # (self.num_capture, 1),
                             # just in case tha acquisition time is set very long...
                             (self.parent.cam.acquire_time, 1),
-                            (self.parent.cam.acquire_period, 1), ])
+                            (self.parent.cam.acquire_period, 1),
+                            (self.parent.cam.acquire_raw, 1)])
 
         original_vals = {sig: sig.get() for sig in sigs}
 
@@ -266,6 +267,7 @@ class FCCDCam(AreaDetectorCam):
     acquire_time = ADCpt(SignalWithRBV, 'AdjustedAcquireTime')
     acquire_period = ADCpt(SignalWithRBV, 'AdjustedAcquirePeriod')
     acquire = ADCpt(EpicsSignal, 'AdjustedAcquire')
+    acquire_raw = ADCpt(EpicsSignal, 'Acquire')
 
     initialize = ADCpt(EpicsSignal, 'Initialize')
     shutdown = ADCpt(EpicsSignal, "Shutdown")
@@ -320,12 +322,12 @@ class ProductionCamBase(DetectorBase):
         self.stage_sigs.pop('cam.acquire', None)
         self.stage_sigs.pop(self.cam.acquire, None)
 
-        # we need to take the detector out of acquire mode
-        self._original_vals[self.cam.acquire] = self.cam.acquire.get()
-        set_and_wait(self.cam.acquire, 0)
-        # but then watch for when detector state
-        while self.cam.detector_state.get(as_string=True) != 'Idle':
-            ttime.sleep(.01)
+        # # we need to take the detector out of acquire mode
+        # self._original_vals[self.cam.acquire] = self.cam.acquire.get()
+        # set_and_wait(;lsself.cam.acquire, 0)
+        # # but then watch for when detector state
+        # while self.cam.detector_state.get(as_string=True) != 'Idle':
+        #     ttime.sleep(.01)
 
         return super().stage()
 
@@ -408,7 +410,7 @@ class StageOnFirstTrigger(ProductionCamTriggered):
     def _trigger_stage(self):
         if not self._warmed_up:
             self.hdf5.warmup()
-        self._acquisition_signal.subscribe(self._acquire_changed)
+        # self._acquisition_signal.subscribe(self._acquire_changed)
         return super(StageOnFirstTrigger, self).stage()
 
     def stage(self):
@@ -421,7 +423,7 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         self.trigger_staged = False
 
     def trigger(self):
-        set_and_wait(self.hdf5.capture, 1)
+        self.hdf5.capture.put(1)
         if not self.trigger_staged:
             self._trigger_stage()
             self.trigger_staged = True
@@ -430,6 +432,12 @@ class StageOnFirstTrigger(ProductionCamTriggered):
 
 
 def dark_plan(detector):
+    # stash numcapture
+    num_capture = detector.hdf5.num_capture.get()
+
+    # set to 1 temporarily
+    detector.hdf5.num_capture.put(1)
+
     # Restage to ensure that dark frames goes into a separate file.
     yield from bps.unstage(detector)
     yield from bps.stage(detector)
@@ -443,11 +451,15 @@ def dark_plan(detector):
     # Restage.
     yield from bps.unstage(detector)
     yield from bps.stage(detector)
+
+    # restore numcapture
+    detector.hdf5.num_capture.put(num_capture)
     return snapshot
 
 
 class DarkFrameFCCD(StageOnFirstTrigger):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super(DarkFrameFCCD, self).__init__(*args, **kwargs)
         run_engine = get_run_engine()
 
         # Always take a fresh dark frame at the beginning of each run.
