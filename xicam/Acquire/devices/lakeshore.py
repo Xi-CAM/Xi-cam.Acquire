@@ -9,4 +9,4 @@ class LakeShore336(Device):
     heater_output = Cpt(EpicsSignalRO, 'HeaterOutput')
 
     temp_limit = Cpt(EpicsSignalWithRBV, 'TemperatureLimit')
-    set_point = Cpt(EpicsSignalWithRBV, 'SetPoint')
+    temp_set_point = Cpt(EpicsSignalWithRBV, 'TemperatureSetPoint')
