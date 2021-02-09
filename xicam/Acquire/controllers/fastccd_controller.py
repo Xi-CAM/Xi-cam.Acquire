@@ -1,6 +1,7 @@
 from pydm.widgets import PyDMPushButton, PyDMLabel
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout
 from .areadetector import AreaDetectorController
+from xicam.plugins import manager as plugin_manager
 
 
 class FastCCDController(AreaDetectorController):
@@ -33,3 +34,7 @@ class FastCCDController(AreaDetectorController):
 
         self.hlayout.addWidget(camera_panel)
         self.hlayout.addWidget(dg_panel)
+
+        # Find coupled devices and add them so they'll be used with RE
+        self.coupled_devices += plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin").search(
+            prefix=device.prefix)

@@ -46,6 +46,7 @@ class AreaDetectorController(ControllerPlugin):
 
         self.setLayout(QVBoxLayout())
 
+        self.coupled_devices = []
         self.imageview = self.viewclass()
         self.passive = QCheckBox('Passive Mode')
         self.passive.setChecked(True)
@@ -177,4 +178,4 @@ class AreaDetectorController(ControllerPlugin):
         self.error_text.setText('An error occurred while connecting to this device.')
 
     def acquire(self):
-        self.RE(count([self.device]))
+        self.RE(count(self.coupled_devices))
