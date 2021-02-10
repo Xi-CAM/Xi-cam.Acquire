@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>468</width>
+    <height>337</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,136 +16,55 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="1" column="1">
-      <widget class="PyDMLabel" name="PyDMLabel_TempK_display">
+     <item row="1" column="2">
+      <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay">
        <property name="toolTip">
         <string/>
        </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.RBV</string>
+       <property name="macros" stdset="0">
+        <string>{&quot;MOTOR&quot;:&quot;ES7011:FastCCD:TemperatureCelsius&quot;}</string>
+       </property>
+       <property name="filename" stdset="0">
+        <string>device_readonly.ui</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
-      <widget class="PyDMLabel" name="PyDMLabel_TempC_display">
+     <item row="2" column="2">
+      <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_2">
        <property name="toolTip">
         <string/>
        </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.RBV</string>
+       <property name="macros" stdset="0">
+        <string>{&quot;MOTOR&quot;:&quot;IOC:m1&quot;}</string>
+       </property>
+       <property name="filename" stdset="0">
+        <string>device_readonly.ui</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="PyDMLabel" name="PyDMLabel_TempK">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
+     <item row="3" column="2">
+      <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_3">
        <property name="toolTip">
         <string/>
        </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.DESC</string>
+       <property name="macros" stdset="0">
+        <string>{&quot;MOTOR&quot;:&quot;IOC:m1&quot;}</string>
+       </property>
+       <property name="filename" stdset="0">
+        <string>device_readwrite.ui</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="0">
-      <widget class="PyDMLabel" name="PyDMLabel_TempC">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
+     <item row="4" column="2">
+      <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_4">
        <property name="toolTip">
         <string/>
        </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.DESC</string>
+       <property name="macros" stdset="0">
+        <string>{&quot;MOTOR&quot;:&quot;IOC:m1&quot;}.</string>
        </property>
-       <property name="displayFormat" stdset="0">
-        <enum>PyDMLabel::String</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="PyDMLabel" name="PyDMLabel_TempLimit">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.DESC</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="PyDMLabel" name="PyDMLabel_SetPoint">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.DESC</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="PyDMLineEdit" name="PyDMLineEdit_TempLimit">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.VAL</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="PyDMLineEdit" name="PyDMLineEdit_SetPoint">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.VAL</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="PyDMLabel" name="PyDMLabel_HeaterOutput">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.DESC</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="PyDMLabel" name="PyDMLabel_HeaterOutput_display">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.RBV</string>
+       <property name="filename" stdset="0">
+        <string>device_readwrite.ui</string>
        </property>
       </widget>
      </item>
@@ -155,14 +74,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PyDMLabel</class>
-   <extends>QLabel</extends>
-   <header>pydm.widgets.label</header>
-  </customwidget>
-  <customwidget>
-   <class>PyDMLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>pydm.widgets.line_edit</header>
+   <class>PyDMEmbeddedDisplay</class>
+   <extends>QFrame</extends>
+   <header>pydm.widgets.embedded_display</header>
   </customwidget>
  </customwidgets>
  <resources/>
