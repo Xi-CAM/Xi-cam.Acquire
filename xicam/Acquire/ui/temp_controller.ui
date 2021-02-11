@@ -22,7 +22,7 @@
         <string/>
        </property>
        <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;TempertureKelvin&quot;}</string>
+        <string>{&quot;STEM&quot;:&quot;TemperatureKelvin&quot;}</string>
        </property>
        <property name="filename" stdset="0">
         <string>device_readonly.ui</string>
@@ -48,7 +48,7 @@
         <string/>
        </property>
        <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;TempertureCelsius&quot;}</string>
+        <string>{&quot;STEM&quot;:&quot;TemperatureCelsius&quot;}</string>
        </property>
        <property name="filename" stdset="0">
         <string>device_readonly.ui</string>
@@ -100,7 +100,7 @@
        </property>
        <property name="curves">
         <stringlist>
-         <string>{&quot;channel&quot;: &quot;ca://${PREFIX}:TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;white&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+         <string>{&quot;channel&quot;: &quot;ca://${PREFIX}TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;white&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
         </stringlist>
        </property>
       </widget>
