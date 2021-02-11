@@ -37,6 +37,9 @@
        <property name="toolTip">
         <string/>
        </property>
+       <property name="precision" stdset="0">
+        <number>0</number>
+       </property>
        <property name="channel" stdset="0">
         <string>ca://${PREFIX}${STEM}_RBV</string>
        </property>
@@ -46,6 +49,12 @@
       <widget class="PyDMLineEdit" name="PyDMLineEdit_TempLimit">
        <property name="toolTip">
         <string/>
+       </property>
+       <property name="precision" stdset="0">
+        <number>0</number>
+       </property>
+       <property name="precisionFromPV" stdset="0">
+        <bool>true</bool>
        </property>
        <property name="channel" stdset="0">
         <string>ca://${PREFIX}${STEM}</string>

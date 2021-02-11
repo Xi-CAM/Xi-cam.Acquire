@@ -100,7 +100,7 @@
        </property>
        <property name="curves">
         <stringlist>
-         <string>{&quot;channel&quot;: &quot;ca://${PREFIX}TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;white&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+         <string>{&quot;channel&quot;: &quot;ca://${PREFIX}:TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;white&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
         </stringlist>
        </property>
       </widget>
