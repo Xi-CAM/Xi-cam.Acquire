@@ -37,6 +37,9 @@
        <property name="toolTip">
         <string/>
        </property>
+       <property name="channel" stdset="0">
+        <string>ca://${MOTOR}.RBV</string>
+       </property>
       </widget>
      </item>
      <item>
@@ -56,12 +59,12 @@
  <customwidgets>
   <customwidget>
    <class>PyDMLabel</class>
-   <extends>QLabel</extends>
+   <extends></extends>
    <header>pydm.widgets.label</header>
   </customwidget>
   <customwidget>
    <class>PyDMLineEdit</class>
-   <extends>QLineEdit</extends>
+   <extends></extends>
    <header>pydm.widgets.line_edit</header>
   </customwidget>
  </customwidgets>

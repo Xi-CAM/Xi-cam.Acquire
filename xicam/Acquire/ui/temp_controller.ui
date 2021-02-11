@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>337</height>
+    <height>566</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,13 +16,26 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
+     <item row="5" column="2">
+      <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_4">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="macros" stdset="0">
+        <string>{&quot;MOTOR&quot;:&quot;IOC:m1&quot;}.</string>
+       </property>
+       <property name="filename" stdset="0">
+        <string>device_readwrite.ui</string>
+       </property>
+      </widget>
+     </item>
      <item row="1" column="2">
       <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay">
        <property name="toolTip">
         <string/>
        </property>
        <property name="macros" stdset="0">
-        <string>{&quot;MOTOR&quot;:&quot;ES7011:FastCCD:TemperatureCelsius&quot;}</string>
+        <string>{&quot;MOTOR&quot;:&quot;ES7011:FastCCD:TempertureCelsius&quot;}</string>
        </property>
        <property name="filename" stdset="0">
         <string>device_readonly.ui</string>
@@ -42,7 +55,7 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="2">
+     <item row="4" column="2">
       <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_3">
        <property name="toolTip">
         <string/>
@@ -55,16 +68,10 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="2">
-      <widget class="PyDMEmbeddedDisplay" name="PyDMEmbeddedDisplay_4">
+     <item row="3" column="2">
+      <widget class="PyDMTimePlot" name="PyDMTimePlot">
        <property name="toolTip">
         <string/>
-       </property>
-       <property name="macros" stdset="0">
-        <string>{&quot;MOTOR&quot;:&quot;IOC:m1&quot;}.</string>
-       </property>
-       <property name="filename" stdset="0">
-        <string>device_readwrite.ui</string>
        </property>
       </widget>
      </item>
@@ -74,8 +81,13 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>PyDMTimePlot</class>
+   <extends></extends>
+   <header>pydm.widgets.timeplot</header>
+  </customwidget>
+  <customwidget>
    <class>PyDMEmbeddedDisplay</class>
-   <extends>QFrame</extends>
+   <extends></extends>
    <header>pydm.widgets.embedded_display</header>
   </customwidget>
  </customwidgets>
