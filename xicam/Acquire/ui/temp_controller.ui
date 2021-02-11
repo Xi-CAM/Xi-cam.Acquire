@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>566</height>
+    <height>682</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -55,6 +55,19 @@
        </property>
       </widget>
      </item>
+     <item row="4" column="2">
+      <widget class="PyDMEmbeddedDisplay" name="HeaterOutput">
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="macros" stdset="0">
+        <string>{&quot;STEM&quot;:&quot;HeaterOutput&quot;}</string>
+       </property>
+       <property name="filename" stdset="0">
+        <string>device_readonly.ui</string>
+       </property>
+      </widget>
+     </item>
      <item row="6" column="2">
       <widget class="PyDMEmbeddedDisplay" name="SetPoint">
        <property name="toolTip">
@@ -69,22 +82,26 @@
       </widget>
      </item>
      <item row="2" column="2">
-      <widget class="PyDMTimePlot" name="PyDMTimePlot">
+      <widget class="PyDMTimePlot" name="TempvsTime">
+       <property name="font">
+        <font>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
+       </property>
        <property name="toolTip">
         <string/>
        </property>
-      </widget>
-     </item>
-     <item row="4" column="2">
-      <widget class="PyDMEmbeddedDisplay" name="HeaterOutput">
-       <property name="toolTip">
-        <string/>
+       <property name="showXGrid">
+        <bool>true</bool>
        </property>
-       <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;HeaterOutput&quot;}</string>
+       <property name="showYGrid">
+        <bool>true</bool>
        </property>
-       <property name="filename" stdset="0">
-        <string>device_readonly.ui</string>
+       <property name="curves">
+        <stringlist>
+         <string>{&quot;channel&quot;: &quot;ca://${PREFIX}TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;white&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+        </stringlist>
        </property>
       </widget>
      </item>
