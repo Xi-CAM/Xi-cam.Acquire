@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>682</height>
+    <height>806</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -83,10 +83,16 @@
      </item>
      <item row="2" column="2">
       <widget class="PyDMTimePlot" name="TempvsTime">
+       <property name="minimumSize">
+        <size>
+         <width>400</width>
+         <height>200</height>
+        </size>
+       </property>
        <property name="font">
         <font>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="toolTip">
@@ -98,10 +104,30 @@
        <property name="showYGrid">
         <bool>true</bool>
        </property>
+       <property name="title" stdset="0">
+        <string>Temperature over Time</string>
+       </property>
+       <property name="yLabels">
+        <stringlist>
+         <string>T (C)</string>
+        </stringlist>
+       </property>
+       <property name="showLegend">
+        <bool>false</bool>
+       </property>
        <property name="curves">
         <stringlist>
          <string>{&quot;channel&quot;: &quot;ca://${PREFIX}TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;white&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
         </stringlist>
+       </property>
+       <property name="bufferSize">
+        <number>18000</number>
+       </property>
+       <property name="timeSpan">
+        <double>3600.000000000000000</double>
+       </property>
+       <property name="updateInterval">
+        <double>1.000000000000000</double>
        </property>
       </widget>
      </item>
