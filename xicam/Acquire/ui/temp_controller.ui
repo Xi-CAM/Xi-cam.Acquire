@@ -35,7 +35,7 @@
         <string/>
        </property>
        <property name="macros" stdset="0">
-        <string>{&quot;MOTOR&quot;:&quot;ES7011:FastCCD:TempertureCelsius&quot;}</string>
+        <string>{&quot;STEM&quot;:&quot;TempertureCelsius&quot;}</string>
        </property>
        <property name="filename" stdset="0">
         <string>device_readonly.ui</string>
