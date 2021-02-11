@@ -2,6 +2,7 @@ from pydm.widgets import PyDMPushButton, PyDMLabel
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
+from xicam.SAXS.ontology import NXsas
 
 
 class FastCCDController(AreaDetectorController):
@@ -38,3 +39,13 @@ class FastCCDController(AreaDetectorController):
         # Find coupled devices and add them so they'll be used with RE
         self.coupled_devices += plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin").search(
             prefix=device.prefix)
+
+        self.metadata["projections"] = [{'name': 'NXSAS',
+                    'version': '0.1.0',
+                    'projection':
+                        {NXsas.DATA_PROJECTION_KEY: {'type': 'linked',
+                                               'stream': 'primary',
+                                               'location': 'event',
+                                               'field': f"{device.name}_image"}},
+                    'configuration': {'ask': 'Dylan'}  # FIXME: ask Dylan. do we need this in all our other projections?
+                    }]

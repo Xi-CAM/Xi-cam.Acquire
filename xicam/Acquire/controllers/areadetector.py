@@ -54,6 +54,7 @@ class AreaDetectorController(ControllerPlugin):
         self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
         self.layout().addWidget(self.passive)
+        self.metadata = {}
 
         config_layout = QFormLayout()
         config_layout.addRow('Acquire Time',
@@ -178,4 +179,4 @@ class AreaDetectorController(ControllerPlugin):
         self.error_text.setText('An error occurred while connecting to this device.')
 
     def acquire(self):
-        self.RE(count(self.coupled_devices))
+        self.RE(count(self.coupled_devices), metadata=self.metadata)
