@@ -28,7 +28,7 @@
         <string/>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${PREFIX}${STEM}.DESC</string>
+        <string>ca://${PREFIX}${STEM}.name</string>
        </property>
        <property name="displayFormat" stdset="0">
         <enum>PyDMLabel::String</enum>
