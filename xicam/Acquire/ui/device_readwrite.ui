@@ -28,7 +28,7 @@
         <string/>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.DESC</string>
+        <string>ca://${PREFIX}${STEM}.DESC</string>
        </property>
       </widget>
      </item>
@@ -38,7 +38,7 @@
         <string/>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.RBV</string>
+        <string>ca://${PREFIX}${STEM}_RBV</string>
        </property>
       </widget>
      </item>
@@ -48,7 +48,7 @@
         <string/>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${MOTOR}.VAL</string>
+        <string>ca://${PREFIX}${STEM}</string>
        </property>
       </widget>
      </item>
