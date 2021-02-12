@@ -116,10 +116,7 @@
         </stringlist>
        </property>
        <property name="yLabels">
-        <stringlist>
-         <string>T (C)</string>
-         <string>Heater (%)</string>
-        </stringlist>
+        <stringlist/>
        </property>
        <property name="showLegend">
         <bool>true</bool>
