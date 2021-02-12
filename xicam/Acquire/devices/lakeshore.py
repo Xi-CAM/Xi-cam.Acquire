@@ -1,3 +1,4 @@
+from ophyd import Component as Cpt, Device
 from ophyd.signal import (EpicsSignalRO, EpicsSignal)
 from ophyd.areadetector.base import EpicsSignalWithRBV
 

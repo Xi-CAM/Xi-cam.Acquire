@@ -267,6 +267,7 @@ class FCCDCam(AreaDetectorCam):
 
     initialize = ADCpt(EpicsSignal, 'Initialize')
     shutdown = ADCpt(EpicsSignal, "Shutdown")
+    state = ADCpt(EpicsSignalRO, "State")
 
     def __init__(self, *args, temp_pv=None, **kwargs):
         self._temp_pv = temp_pv
@@ -376,6 +377,8 @@ class DelayGenerator(Device):
                      'ShutterOpenDelay')  # TODO: This (and all) default values should be set on the IOC!
     initialize = Cpt(EpicsSignal, 'Initialize')
     reset = Cpt(EpicsSignal, 'Reset')
+    state = Cpt(EpicsSignalRO, 'State')
+
     shutter_close_delay = Cpt(EpicsSignal, 'ShutterCloseDelay')
 
 

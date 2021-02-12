@@ -56,7 +56,7 @@ class HappiClientModel(QStandardItemModel):
         self._clients = []
 
     def add_client(self, client: Client):
-        self._clients += client
+        self._clients.append(client)
         client_item = QStandardItem(client.backend.path)
         client_item.setData(client)
         self.appendRow(client_item)
@@ -97,3 +97,13 @@ class HappiSettingsPlugin(SettingsPlugin):
     @property
     def devices_view(self):
         return self._device_view
+
+    def search(self, **kwargs):
+        """
+        Searches all happi clients (see happi.client.Client.search)
+        """
+        results = []
+        for client in self._client_model._clients:
+            results += client.search(**kwargs)
+
+        return results

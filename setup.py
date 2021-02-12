@@ -102,6 +102,7 @@ setup(
     entry_points={'xicam.plugins.ControllerPlugin': [
         'areadetector = xicam.Acquire.controllers.areadetector:AreaDetectorController',
         'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
+        'fastccd_controller = xicam.Acquire.controllers.fastccd_controller:FastCCDController',
         'typhos = xicam.Acquire.controllers.typhoscontroller:TyphosController'],
         'xicam.plugins.DataResourcePlugin': [
             'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
