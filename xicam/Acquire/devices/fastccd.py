@@ -357,7 +357,7 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
 
     def resume(self):
         set_val = 1
-        set_and_wait(self.hdf5.capture, set_val)
+        set_and_wait(self.hdf5.capture, set_val)  # use acquire pv here rather than disable capture
         self.hdf5._point_counter = itertools.count()
         # The AD HDF5 plugin bumps its file_number and starts writing into a
         # *new file* because we toggled capturing off and on again.
@@ -418,6 +418,7 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         return [self]
 
     def unstage(self):
+        self.hdf5.capture.put(0)
         super(StageOnFirstTrigger, self).unstage()
         self._acquisition_signal.clear_sub(self._acquire_changed)
         self.trigger_staged = False
