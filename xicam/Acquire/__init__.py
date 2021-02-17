@@ -1,6 +1,6 @@
 from . import patches
-
 import numpy as np
+import os
 from qtpy.QtCore import Signal
 from qtpy.QtWidgets import QStackedWidget
 
@@ -12,6 +12,8 @@ from .controlwidgets import RunEngineWidget
 
 from . import runengine
 
+#export pydm environment variable
+os.environ["PYDM_DISPLAYS_PATH"] = os.path.dirname(__file__) +"/xicam/Acquire/ui/"
 
 class AcquirePlugin(GUIPlugin):
     name = 'Acquire'
