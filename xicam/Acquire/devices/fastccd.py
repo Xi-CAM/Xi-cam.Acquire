@@ -4,7 +4,7 @@ import numpy as np
 
 from ophyd import (Device,
                    SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
-                   ROIPlugin, TransformPlugin, OverlayPlugin)
+                   ROIPlugin, TransformPlugin, OverlayPlugin, FilePlugin)
 
 from ophyd.areadetector import EpicsSignalWithRBV
 from ophyd.areadetector.cam import AreaDetectorCam
@@ -197,7 +197,13 @@ class NoStatsCam(IndirectTrigger, AreaDetector):
     pass
 
 
-class HDF5PluginSWMR(HDF5Plugin):
+class PutCompleteCapture(FilePlugin):
+    def __init__(self, *args, **kwargs):
+        super(PutCompleteCapture, self).__init__(*args, **kwargs)
+        self.capture.put_complete = True
+
+
+class HDF5PluginSWMR(PutCompleteCapture, HDF5Plugin):
     swmr_active = Cpt(EpicsSignalRO, 'SWMRActive_RBV')
     swmr_mode = Cpt(EpicsSignalWithRBV, 'SWMRMode')
     swmr_supported = Cpt(EpicsSignalRO, 'SWMRSupported_RBV')
