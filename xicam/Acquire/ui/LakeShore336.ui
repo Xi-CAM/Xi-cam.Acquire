@@ -6,152 +6,87 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>546</width>
-    <height>853</height>
+    <width>395</width>
+    <height>468</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="8" column="2">
-      <widget class="PyDMEmbeddedDisplay" name="SetPoint">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;TemperatureSetPoint&quot;}</string>
-       </property>
-       <property name="filename" stdset="0">
-        <string>device_readwrite.ui</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="2">
-      <widget class="PyDMEmbeddedDisplay" name="TempK">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;TemperatureKelvin&quot;}</string>
-       </property>
-       <property name="filename" stdset="0">
-        <string>device_readonly.ui</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="2">
-      <widget class="PyDMEmbeddedDisplay" name="TLimitK">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;TemperatureLimit&quot;}</string>
-       </property>
-       <property name="filename" stdset="0">
-        <string>device_readwrite.ui</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="2">
-      <widget class="PyDMEmbeddedDisplay" name="TempC">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;TemperatureCelsius&quot;}</string>
-       </property>
-       <property name="filename" stdset="0">
-        <string>device_readonly.ui</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="2">
-      <widget class="PyDMEmbeddedDisplay" name="HeaterOutput">
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="macros" stdset="0">
-        <string>{&quot;STEM&quot;:&quot;HeaterOutput&quot;}</string>
-       </property>
-       <property name="filename" stdset="0">
-        <string>device_readonly.ui</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="2">
-      <widget class="PyDMTimePlot" name="TimePlot">
-       <property name="minimumSize">
-        <size>
-         <width>400</width>
-         <height>200</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="toolTip">
-        <string/>
-       </property>
-       <property name="showXGrid">
-        <bool>true</bool>
-       </property>
-       <property name="showYGrid">
-        <bool>true</bool>
-       </property>
-       <property name="showRightAxis">
-        <bool>true</bool>
-       </property>
-       <property name="title" stdset="0">
-        <string>Temperature/Heater Output over Time</string>
-       </property>
-       <property name="xLabels">
-        <stringlist>
-         <string>time</string>
-        </stringlist>
-       </property>
-       <property name="yLabels">
-        <stringlist/>
-       </property>
-       <property name="showLegend">
-        <bool>true</bool>
-       </property>
-       <property name="curves">
-        <stringlist>
-         <string>{&quot;channel&quot;: &quot;ca://${PREFIX}TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;white&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
-         <string>{&quot;channel&quot;: &quot;ca://${PREFIX}HeaterOutput&quot;, &quot;name&quot;: &quot;Heater Output %&quot;, &quot;color&quot;: &quot;red&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
-        </stringlist>
-       </property>
-       <property name="bufferSize">
-        <number>18000</number>
-       </property>
-       <property name="timeSpan">
-        <double>1800.000000000000000</double>
-       </property>
-       <property name="updateInterval">
-        <double>0.500000000000000</double>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="TyphosDisplayTitle" name="TyphosDisplayTitle">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="underline_midLineWidth" stdset="0">
+      <number>-4</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="TyphosCompositeSignalPanel" name="signal_panel">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="whatsThis">
+      <string>
+    Panel of Signals + Sub-Devices for Device
+    </string>
+     </property>
+     <property name="showOmitted" stdset="0">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PyDMTimePlot</class>
-   <extends></extends>
-   <header>pydm.widgets.timeplot</header>
+   <class>TyphosSignalPanel</class>
+   <extends>QWidget</extends>
+   <header>typhos.panel</header>
   </customwidget>
   <customwidget>
-   <class>PyDMEmbeddedDisplay</class>
-   <extends></extends>
-   <header>pydm.widgets.embedded_display</header>
+   <class>TyphosCompositeSignalPanel</class>
+   <extends>TyphosSignalPanel</extends>
+   <header>typhos.panel</header>
+  </customwidget>
+  <customwidget>
+   <class>TyphosDisplayTitle</class>
+   <extends>QFrame</extends>
+   <header>typhos.display</header>
   </customwidget>
  </customwidgets>
  <resources/>
