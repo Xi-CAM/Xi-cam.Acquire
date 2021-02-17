@@ -28,7 +28,7 @@
         <string/>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${PREFIX}${STEM}.doc</string>
+        <string>ca://${prefix}${STEM}</string>
        </property>
        <property name="displayFormat" stdset="0">
         <enum>PyDMLabel::String</enum>
@@ -47,7 +47,7 @@
         <bool>false</bool>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${PREFIX}${STEM}</string>
+        <string>ca://${prefix}${STEM}</string>
        </property>
       </widget>
      </item>
@@ -58,7 +58,7 @@
  <customwidgets>
   <customwidget>
    <class>PyDMLabel</class>
-   <extends></extends>
+   <extends>QLabel</extends>
    <header>pydm.widgets.label</header>
   </customwidget>
  </customwidgets>

@@ -28,7 +28,7 @@
         <string/>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${PREFIX}${STEM}.doc</string>
+        <string>ca://${prefix}${STEM}</string>
        </property>
       </widget>
      </item>
@@ -41,7 +41,7 @@
         <number>0</number>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${PREFIX}${STEM}_RBV</string>
+        <string>ca://${prefix}${STEM}_RBV</string>
        </property>
       </widget>
      </item>
@@ -57,7 +57,7 @@
         <bool>true</bool>
        </property>
        <property name="channel" stdset="0">
-        <string>ca://${PREFIX}${STEM}</string>
+        <string>ca://${prefix}${STEM}</string>
        </property>
       </widget>
      </item>
@@ -68,12 +68,12 @@
  <customwidgets>
   <customwidget>
    <class>PyDMLabel</class>
-   <extends></extends>
+   <extends>QLabel</extends>
    <header>pydm.widgets.label</header>
   </customwidget>
   <customwidget>
    <class>PyDMLineEdit</class>
-   <extends></extends>
+   <extends>QLineEdit</extends>
    <header>pydm.widgets.line_edit</header>
   </customwidget>
  </customwidgets>
