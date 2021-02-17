@@ -48,7 +48,9 @@ class AreaDetectorController(ControllerPlugin):
         self.setLayout(QVBoxLayout())
 
         self.coupled_devices = []
+
         self.cached_frame = None
+
         self.imageview = self.viewclass()
         self.passive = QCheckBox('Passive Mode')
         self.passive.setChecked(True)
