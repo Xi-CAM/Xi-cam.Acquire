@@ -2,9 +2,11 @@ import numpy as np
 
 from databroker import Broker
 from databroker.core import BlueskyRun
+from happi import from_container
 from pydm.widgets import PyDMPushButton, PyDMLabel
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout
 from .areadetector import AreaDetectorController
+from xicam.plugins import manager as plugin_manager
 
 
 class FastCCDController(AreaDetectorController):
@@ -37,9 +39,15 @@ class FastCCDController(AreaDetectorController):
 
         self.hlayout.addWidget(camera_panel)
         self.hlayout.addWidget(dg_panel)
+        self.passive.deleteLater()  # active mode is useless for fastccd at COSMIC-Scattering
 
         # TODO: pull from settingsplugin
         self.db = Broker.named('local').v2
+
+        # Find coupled devices and add them so they'll be used with RE
+        self.coupled_devices += map(lambda search_result: from_container(search_result.device),
+                                    plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin").search(
+                                        prefix=device.prefix))
 
     # def preprocess(self, image):
     #
