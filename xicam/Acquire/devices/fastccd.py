@@ -22,9 +22,11 @@ from ophyd.areadetector.base import (ADBase, ADComponent as ADCpt, ad_group,
 from ophyd.areadetector.plugins import PluginBase
 from ophyd.device import DynamicDeviceComponent as DDC, Staged
 
-import ophyd
+import bluesky.plan_stubs as bps
+import bluesky_darkframes
 from ophyd.utils import set_and_wait
 from ophyd.signal import (EpicsSignalRO, EpicsSignal)
+from ..runengine import get_run_engine
 
 
 class IndirectTrigger(SingleTrigger):
@@ -222,7 +224,8 @@ class HDF5PluginSWMR(HDF5Plugin):
                             # (self.num_capture, 1),
                             # just in case tha acquisition time is set very long...
                             (self.parent.cam.acquire_time, 1),
-                            (self.parent.cam.acquire_period, 1), ])
+                            (self.parent.cam.acquire_period, 1),
+                            (self.parent.cam.acquire_raw, 1)])
 
         original_vals = {sig: sig.get() for sig in sigs}
 
@@ -264,6 +267,7 @@ class FCCDCam(AreaDetectorCam):
     acquire_time = ADCpt(SignalWithRBV, 'AdjustedAcquireTime')
     acquire_period = ADCpt(SignalWithRBV, 'AdjustedAcquirePeriod')
     acquire = ADCpt(EpicsSignal, 'AdjustedAcquire')
+    acquire_raw = ADCpt(EpicsSignal, 'Acquire')
 
     initialize = ADCpt(EpicsSignal, 'Initialize')
     shutdown = ADCpt(EpicsSignal, "Shutdown")
@@ -318,12 +322,12 @@ class ProductionCamBase(DetectorBase):
         self.stage_sigs.pop('cam.acquire', None)
         self.stage_sigs.pop(self.cam.acquire, None)
 
-        # we need to take the detector out of acquire mode
-        self._original_vals[self.cam.acquire] = self.cam.acquire.get()
-        set_and_wait(self.cam.acquire, 0)
-        # but then watch for when detector state
-        while self.cam.detector_state.get(as_string=True) != 'Idle':
-            ttime.sleep(.01)
+        # # we need to take the detector out of acquire mode
+        # self._original_vals[self.cam.acquire] = self.cam.acquire.get()
+        # set_and_wait(;lsself.cam.acquire, 0)
+        # # but then watch for when detector state
+        # while self.cam.detector_state.get(as_string=True) != 'Idle':
+        #     ttime.sleep(.01)
 
         return super().stage()
 
@@ -353,7 +357,7 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
 
     def resume(self):
         set_val = 1
-        set_and_wait(self.hdf5.capture, set_val)
+        set_and_wait(self.hdf5.capture, set_val)  # use acquire pv here rather than disable capture
         self.hdf5._point_counter = itertools.count()
         # The AD HDF5 plugin bumps its file_number and starts writing into a
         # *new file* because we toggled capturing off and on again.
@@ -372,7 +376,8 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
 
 
 class DelayGenerator(Device):
-    trigger_on_off = Cpt(EpicsSignalWithRBV, 'TriggerEnabled')
+    trigger_enabled = Cpt(EpicsSignalWithRBV, 'TriggerEnabled')
+    shutter_enabled = Cpt(EpicsSignalWithRBV, 'ShutterEnabled')
     delay_time = Cpt(EpicsSignalWithRBV,
                      'ShutterOpenDelay')  # TODO: This (and all) default values should be set on the IOC!
     initialize = Cpt(EpicsSignal, 'Initialize')
@@ -405,23 +410,82 @@ class StageOnFirstTrigger(ProductionCamTriggered):
     def _trigger_stage(self):
         if not self._warmed_up:
             self.hdf5.warmup()
-        self._acquisition_signal.subscribe(self._acquire_changed)
+        # self._acquisition_signal.subscribe(self._acquire_changed)
         return super(StageOnFirstTrigger, self).stage()
 
     def stage(self):
+        set_and_wait(self.dg1.shutter_enabled, True)
         return [self]
 
     def unstage(self):
+        self.hdf5.capture.put(0)
         super(StageOnFirstTrigger, self).unstage()
         self._acquisition_signal.clear_sub(self._acquire_changed)
         self.trigger_staged = False
 
     def trigger(self):
-        set_and_wait(self.hdf5.capture, 1)
+        self.hdf5.capture.put(1)
         if not self.trigger_staged:
             self._trigger_stage()
             self.trigger_staged = True
 
         return super().trigger()
 
-FastCCD = StageOnFirstTrigger
+
+def dark_plan(detector):
+    # stash numcapture
+    num_capture = detector.hdf5.num_capture.get()
+
+    # set to 1 temporarily
+    detector.hdf5.num_capture.put(1)
+
+    # Restage to ensure that dark frames goes into a separate file.
+    yield from bps.unstage(detector)
+    yield from bps.stage(detector)
+    yield from bps.mv(detector.dg1.shutter_enabled, False)
+    # The `group` parameter passed to trigger MUST start with
+    # bluesky-darkframes-trigger.
+    yield from bps.trigger(detector, group='bluesky-darkframes-trigger')
+    yield from bps.wait('bluesky-darkframes-trigger')
+    snapshot = bluesky_darkframes.SnapshotDevice(detector)
+    yield from bps.mv(detector.dg1.shutter_enabled, True)
+    # Restage.
+    yield from bps.unstage(detector)
+    yield from bps.stage(detector)
+
+    # restore numcapture
+    detector.hdf5.num_capture.put(num_capture)
+    return snapshot
+
+
+class DarkFrameFCCD(StageOnFirstTrigger):
+    def __init__(self, *args, **kwargs):
+        super(DarkFrameFCCD, self).__init__(*args, **kwargs)
+        run_engine = get_run_engine()
+
+        # Always take a fresh dark frame at the beginning of each run.
+        dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+            dark_plan=dark_plan, detector=self, max_age=0)
+
+        # # Take a dark frame if the last one we took is more than 30 seconds old.
+        # dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+        #     dark_plan=dark_plan, detector=self, max_age=30)
+        #
+        # # Take a fresh dark frame if the last one we took *with this exposure time*
+        # # is more than 30 seconds old.
+        # dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+        #     dark_plan=dark_plan, detector=det, max_age=30,
+        #     locked_signals=[det.exposure_time])
+        #
+        # # Always take a new dark frame if the exposure time was changed from the
+        # # previous run, even if we took one with this exposure time on some earlier
+        # # run. Also, re-take if the settings haven't changed but the last dark
+        # # frame is older than 30 seconds.
+        # dark_frame_preprocessor = bluesky_darkframes.DarkFramePreprocessor(
+        #     dark_plan=dark_plan, detector=det, max_age=30,
+        #     locked_signals=[det.exposure_time], limit=1)
+
+        run_engine.RE.preprocessors.append(dark_frame_preprocessor)
+
+
+FastCCD = DarkFrameFCCD
