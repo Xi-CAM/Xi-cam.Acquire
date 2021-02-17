@@ -70,6 +70,50 @@
      </property>
     </spacer>
    </item>
+   <item>
+    <widget class="PyDMTimePlot" name="PyDMTimePlot">
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="showXGrid">
+      <bool>true</bool>
+     </property>
+     <property name="showYGrid">
+      <bool>true</bool>
+     </property>
+     <property name="axisColor">
+      <color>
+       <red>190</red>
+       <green>194</green>
+       <blue>194</blue>
+      </color>
+     </property>
+     <property name="showRightAxis">
+      <bool>true</bool>
+     </property>
+     <property name="showLegend">
+      <bool>true</bool>
+     </property>
+     <property name="curves">
+      <stringlist>
+       <string>{&quot;channel&quot;: &quot;ca://${prefix}TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;#0c3dff&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+       <string>{&quot;channel&quot;: &quot;ca://${prefix}HeaterOutput&quot;, &quot;name&quot;: &quot;Heater [%]&quot;, &quot;color&quot;: &quot;#fc2431&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+      </stringlist>
+     </property>
+     <property name="timeSpan">
+      <double>1800.000000000000000</double>
+     </property>
+     <property name="updateInterval">
+      <double>0.500000000000000</double>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <customwidgets>
@@ -87,6 +131,11 @@
    <class>TyphosDisplayTitle</class>
    <extends>QFrame</extends>
    <header>typhos.display</header>
+  </customwidget>
+  <customwidget>
+   <class>PyDMTimePlot</class>
+   <extends>QGraphicsView</extends>
+   <header>pydm.widgets.timeplot</header>
   </customwidget>
  </customwidgets>
  <resources/>
