@@ -9,6 +9,10 @@ from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
 
 
+# Pulled from NDPluginFastCCD.h:11
+FCCD_MASK = 0x1FFF
+
+
 class FastCCDController(AreaDetectorController):
     def __init__(self, device):
         super(FastCCDController, self).__init__(device)
@@ -57,10 +61,17 @@ class FastCCDController(AreaDetectorController):
     #     except AttributeError:
     #         return image
 
+    def _bitmask(self, array):
+        return array.astype(int) & FCCD_MASK
+
     def get_dark(self, run_catalog: BlueskyRun):
-        return np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
+        darks = np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
+        return self._bitmask(darks)
 
     def setPassive(self, passive: bool):
         if self.RE.isIdle:
             ...
             # self.device.
+
+    def preprocess(self, image):
+        return self._bitmask(image)  # 0x1FFF
