@@ -40,12 +40,12 @@ class FastCCDController(AreaDetectorController):
         self.coupled_devices += plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin").search(
             prefix=device.prefix)
 
-        self.metadata["projections"] = [{'name': 'NXSAS',
+        self.metadata["projections"] = [{'name': 'NXsas',
                     'version': '0.1.0',
                     'projection':
                         {NXsas.DATA_PROJECTION_KEY: {'type': 'linked',
                                                'stream': 'primary',
                                                'location': 'event',
                                                'field': f"{device.name}_image"}},
-                    'configuration': {'ask': 'Dylan'}  # FIXME: ask Dylan. do we need this in all our other projections?
+                    'configuration': {}
                     }]
