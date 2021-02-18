@@ -6,7 +6,7 @@ from typing import Any
 from bluesky.utils import DuringTask
 from xicam.core import msg, threads
 from xicam.gui.utils import ParameterizedPlan, ParameterDialog
-from functools import partial
+from functools import wraps, partial
 from bluesky import RunEngine, Msg
 import asyncio
 from qtpy import QtCore
@@ -92,6 +92,7 @@ class QRunEngine(QObject):
                 self.sigException.emit(ex)
             self.sigFinish.emit()
 
+    @wraps(RunEngine.__call__)
     def __call__(self, *args, **kwargs):
         self.put(*args, **kwargs)
 

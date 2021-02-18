@@ -7,6 +7,7 @@ from pydm.widgets import PyDMPushButton, PyDMLabel
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
+from xicam.SAXS.ontology import NXsas
 
 
 # Pulled from NDPluginFastCCD.h:11
@@ -53,6 +54,17 @@ class FastCCDController(AreaDetectorController):
                                     plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin").search(
                                         prefix=device.prefix))
 
+
+        self.metadata["projections"] = [{'name': 'NXsas',
+                    'version': '0.1.0',
+                    'projection':
+                        {NXsas.DATA_PROJECTION_KEY: {'type': 'linked',
+                                               'stream': 'primary',
+                                               'location': 'event',
+                                               'field': f"{device.name}_image"}},
+                    'configuration': {}
+                    }]
+
     # def preprocess(self, image):
     #
     #     try:
@@ -74,4 +86,4 @@ class FastCCDController(AreaDetectorController):
             # self.device.
 
     def preprocess(self, image):
-        return self._bitmask(image)  # 0x1FFF
+        return self._bitmask(image)
