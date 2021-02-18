@@ -2,6 +2,8 @@ import time
 from queue import PriorityQueue, Empty
 from dataclasses import dataclass, field
 from typing import Any
+
+from bluesky.utils import DuringTask
 from xicam.core import msg, threads
 from xicam.gui.utils import ParameterizedPlan, ParameterDialog
 from functools import wraps, partial
@@ -61,7 +63,7 @@ class QRunEngine(QObject):
     def __init__(self, **kwargs):
         super(QRunEngine, self).__init__()
 
-        self.RE = RunEngine(context_managers=[], **kwargs)
+        self.RE = RunEngine(context_managers=[], during_task=DuringTask(), **kwargs)
         self.RE.subscribe(self.sigDocumentYield.emit)
 
         # TODO: pull from settings plugin

@@ -30,7 +30,7 @@ class ADImageView(DynImageView,
                   PixelCoordinates,
                   Crosshair,
                   BetterButtons,
-                  # LogScaleIntensity,
+                  LogScaleIntensity,
                   ImageViewHistogramOverflowFix):
     pass
 
@@ -38,19 +38,23 @@ class ADImageView(DynImageView,
 class AreaDetectorController(ControllerPlugin):
     viewclass = ADImageView
 
-    def __init__(self, device, maxfps=10):
+    def __init__(self, device, preprocess_enabled=True, maxfps=10):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
+        self.preprocess_enabled = preprocess_enabled
         self._autolevel = True
         self.RE = get_run_engine()
 
         self.setLayout(QVBoxLayout())
 
         self.coupled_devices = []
+
+        self.cached_frame = None
+
         self.imageview = self.viewclass()
         self.passive = QCheckBox('Passive Mode')
         self.passive.setChecked(True)
-        self.error_text = pg.TextItem('Connecting to device...')
+        self.error_text = pg.TextItem('Waiting for data...')
         self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
         self.layout().addWidget(self.passive)
@@ -94,16 +98,14 @@ class AreaDetectorController(ControllerPlugin):
 
         self.thread = None
         self._last_timestamp = time.time()
+        self.update_timer = QTimer()
+        self.update_timer.setInterval(1000 // maxfps)
+        self.update_timer.timeout.connect(self.updateFrame)
+        self.update_timer.start()
 
-        self.device.image1.shaped_image.subscribe(partial(threads.invoke_in_main_thread, self.setFrame))
+        self.device.image1.shaped_image.subscribe(self.cacheFrame, 'value')
 
         self.passive.toggled.connect(self.setPassive)
-
-    def update(self):
-        self.thread = threads.QThreadFuture(self.getFrame, showBusy=False,
-                                            callback_slot=partial(self.setFrame, autoLevels=self._autolevel),
-                                            except_slot=self.setError)
-        self.thread.start()
 
     def _trigger_thread(self):
         while True:
@@ -119,7 +121,7 @@ class AreaDetectorController(ControllerPlugin):
                         msg.showMessage('Connecting to device...')
                         self.device.wait_for_connection()
 
-                self.device.device_obj.trigger()
+                self.device.trigger()
             except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'An error occurred communicating with this device.')
@@ -135,14 +137,13 @@ class AreaDetectorController(ControllerPlugin):
                                                 except_slot=lambda ex: self.device.device_obj.unstage())
             self.thread.start()
 
-    def getFrame(self):
-        try:
-            if not self.passive.isChecked():
-                self.device.device_obj.trigger()
-            return self.device.device_obj.image1.shaped_image.get()
-        except (RuntimeError, CaprotoTimeoutError) as ex:
-            msg.logError(ex)
-        return None
+    def cacheFrame(self, value, **_):
+        self.cached_frame = value
+
+    def updateFrame(self):
+        if self.cached_frame is not None:
+            self.setFrame(self.cached_frame)
+            self.cached_frame = None
 
     def setFrame(self, value=None, **kwargs):
         image = value
@@ -150,9 +151,7 @@ class AreaDetectorController(ControllerPlugin):
         if image is None:
             return
 
-        # # Never exceed maxfps
-        # if 1. / (time.time() - self._last_timestamp) > self.maxfps:
-        #     return
+        image = self.preprocess(image)
 
         if self.imageview.image is None:
             self.imageview.setImage(image, autoHistogramRange=True, autoLevels=True)
@@ -172,7 +171,8 @@ class AreaDetectorController(ControllerPlugin):
         self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.2f}')
         self._last_timestamp = time.time()
 
-        # self.timer.singleShot(1. / self.maxfps * 1000, self.update)
+    def preprocess(self, image):
+        return image
 
     def setError(self, exception: Exception):
         msg.logError(exception)
