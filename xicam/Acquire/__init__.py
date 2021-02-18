@@ -9,11 +9,12 @@ from .pythontools.editor import scripteditor
 from .controlwidgets.BCSConnector import BCSConnector
 from .controlwidgets.deviceview import DeviceView
 from .controlwidgets import RunEngineWidget
+from pathlib import Path
 
 from . import runengine
 
 #export pydm environment variable
-os.environ["PYDM_DISPLAYS_PATH"] = os.path.dirname(__file__) +"/xicam/Acquire/ui/"
+os.environ["PYDM_DISPLAYS_PATH"] = str(Path(os.path.dirname(__file__)) / 'ui')
 
 class AcquirePlugin(GUIPlugin):
     name = 'Acquire'
