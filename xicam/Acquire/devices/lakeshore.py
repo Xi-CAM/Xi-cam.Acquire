@@ -12,10 +12,10 @@ class LakeShore336(Device):
     https://github.com/lbl-camera/fastccd_support_ioc/blob/lakeshore336/fastccd_support_ioc/lakeshore336_ioc.py
     """
     # read-only components (PVs)
-    temp_celsius = Cpt(EpicsSignalRO, 'TemperatureCelsius')
-    temp_kelvin = Cpt(EpicsSignalRO, 'TemperatureKelvin')
-    heater_output = Cpt(EpicsSignalRO, 'HeaterOutput')
+    temp_celsius = Cpt(EpicsSignalRO, 'TemperatureCelsius', name='Temperature (°C)')
+    temp_kelvin = Cpt(EpicsSignalRO, 'TemperatureKelvin', name='Temperature (°K)')
+    heater_output = Cpt(EpicsSignalRO, 'HeaterOutput', name='Heater Output (%)')
 
     # read-write components (PVs)
-    temp_limit = Cpt(EpicsSignalWithRBV, 'TemperatureLimit')
-    temp_set_point = Cpt(EpicsSignalWithRBV, 'TemperatureSetPoint')
+    temp_limit = Cpt(EpicsSignalWithRBV, 'TemperatureLimit', name='Temperature Limit (°K)')
+    temp_set_point = Cpt(EpicsSignalWithRBV, 'TemperatureSetPoint', name='Temperature Setpoint (°C)')
