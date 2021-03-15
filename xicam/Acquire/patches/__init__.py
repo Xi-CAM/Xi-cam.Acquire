@@ -1,8 +1,12 @@
 import sys
 import struct
+from pyqtgraph.parametertree import registerParameterType
+from pyqtgraph.parametertree.parameterTypes import ListParameter
 from qtpy.QtWidgets import QApplication
 from qtpy import QtWidgets, QtCore, QtNetwork, QtGui
 from pyqode import qt
+from happi import from_container
+from xicam.plugins import manager as plugin_manager
 
 Qt_packages = {'QtWidgets': QtWidgets,
                'QtCore': QtCore,
@@ -42,8 +46,26 @@ def _read_header(self):
 
 JsonTcpClient._read_header = _read_header
 
+
 #     for member in dir(subpackage):
 #         if member.startswith('Q') or member in whitelist:
 #             sys.modules[f"pyqode.qt.{subpackage_name}.{member}"] = getattr(subpackage, member)
 #
 # sys.modules['pyqode.qt.QtWidgets.qApp'] = qApp or QApplication.instance()  # qApp is inserted in builtins by PySide2
+
+
+# Add a Device parametertype
+class DeviceParameter(ListParameter):
+    def __init__(self, search: dict = None, **opts):
+        ## Parameter uses 'limits' option to define the set of allowed values
+        if opts.get('values', None) is None:
+            devices = [from_container(container.device)
+                       for container in
+                       plugin_manager.get_plugin_by_name('HappiSettingsPlugin', 'SettingsPlugin').search(
+                           **(search or {}))]
+            opts['values'] = devices
+
+        super(DeviceParameter, self).__init__(**opts)
+
+
+registerParameterType('Device', DeviceParameter, override=True)
