@@ -5,6 +5,7 @@ from qtpy.QtCore import Qt, QItemSelection, Signal
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView
 from happi import Client, Device, HappiItem, from_container
+from happi.backends.mongo_db import MongoBackend
 from typhos.display import TyphosDeviceDisplay
 
 from xicam.core import msg
@@ -79,6 +80,14 @@ class HappiSettingsPlugin(SettingsPlugin):
             for db_file in Path(db_dir).glob('*.json'):
                 client = Client(path=str(db_file))
                 self._client_model.add_client(client)
+        try:
+            mongo_client = MongoBackend(host='127.0.0.1',
+                                        db='happi',
+                                        collection='labview',
+                                        timeout=None)
+            self._client_model.add_client(mongo_client)
+        except: #TODO catch exception properly
+            print("No MongoDB found")
 
         widget = QWidget()
         layout = QVBoxLayout()
