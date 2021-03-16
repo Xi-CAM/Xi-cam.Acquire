@@ -6,6 +6,7 @@ from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView
 from happi import Client, Device, HappiItem, from_container
 from happi.backends.mongo_db import MongoBackend
+from happi.backends.json_db import JSONBackend
 from typhos.display import TyphosDeviceDisplay
 
 from xicam.core import msg
@@ -58,11 +59,22 @@ class HappiClientModel(QStandardItemModel):
 
     def add_client(self, client: Client):
         self._clients.append(client)
-        client_item = QStandardItem(client.backend.path)
+        if isinstance(client.backend, JSONBackend):
+            client_item = QStandardItem(client.backend.path)
+            self.appendRow(client_item)
+            for result in client.search():
+                #add an OphydItem
+                self.add_device(client_item, result.item)
+        if isinstance(client.backend, MongoBackend):
+            # ODO add how to treat mongo backend
+            #what string to add for the QStandardItem
+            client_item = QStandardItem(client.backend._conn_str)
+            self.appendRow(client_item)
+            for n in list(client.backend._collection.find()):
+                self.add_device(client_item, n.item)
+
         client_item.setData(client)
-        self.appendRow(client_item)
-        for result in client.search():
-            self.add_device(client_item, result.item)
+
 
     def add_device(self, client_item: QStandardItem, device: Device):
         device_item = QStandardItem(device.name)
