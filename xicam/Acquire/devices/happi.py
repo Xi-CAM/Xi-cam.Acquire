@@ -61,18 +61,13 @@ class HappiClientModel(QStandardItemModel):
         self._clients.append(client)
         if isinstance(client.backend, JSONBackend):
             client_item = QStandardItem(client.backend.path)
-            self.appendRow(client_item)
-            for result in client.search():
-                #add an OphydItem
-                self.add_device(client_item, result.item)
-        if isinstance(client.backend, MongoBackend):
-            # ODO add how to treat mongo backend
-            #what string to add for the QStandardItem
-            client_item = QStandardItem(client.backend._conn_str)
-            self.appendRow(client_item)
-            for n in list(client.backend._collection.find()):
-                self.add_device(client_item, n.item)
 
+        elif isinstance(client.backend, MongoBackend):
+            client_item = QStandardItem(f"{client.backend._client.HOST}/{client.backend._collection.full_name}")
+        self.appendRow(client_item)
+        for result in client.search():
+            # add an OphydItem
+            self.add_device(client_item, result.item)
         client_item.setData(client)
 
 
@@ -94,12 +89,12 @@ class HappiSettingsPlugin(SettingsPlugin):
                 self._client_model.add_client(client)
         try:
             mongo_client = Client(MongoBackend(host='127.0.0.1',
-                                        db='happi',
-                                        collection='labview',
-                                        timeout=None))
+                                               db='happi',
+                                               collection='labview',
+                                               timeout=None))
             self._client_model.add_client(mongo_client)
-        except: #TODO catch exception properly
-            print("No MongoDB found")
+        except Exception as e: #TODO catch exception properly
+             msg.logError(e)
 
         widget = QWidget()
         layout = QVBoxLayout()
