@@ -81,10 +81,10 @@ class HappiSettingsPlugin(SettingsPlugin):
                 client = Client(path=str(db_file))
                 self._client_model.add_client(client)
         try:
-            mongo_client = MongoBackend(host='127.0.0.1',
+            mongo_client = Client(MongoBackend(host='127.0.0.1',
                                         db='happi',
                                         collection='labview',
-                                        timeout=None)
+                                        timeout=None))
             self._client_model.add_client(mongo_client)
         except: #TODO catch exception properly
             print("No MongoDB found")
