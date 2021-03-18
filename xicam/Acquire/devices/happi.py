@@ -91,6 +91,8 @@ class HappiSettingsPlugin(SettingsPlugin):
             mongo_client = Client(MongoBackend(host='127.0.0.1',
                                                db='happi',
                                                collection='labview',
+                                               user="cosmic",
+                                               pw="xpcs",
                                                timeout=None))
             self._client_model.add_client(mongo_client)
         except Exception as e: #TODO catch exception properly
