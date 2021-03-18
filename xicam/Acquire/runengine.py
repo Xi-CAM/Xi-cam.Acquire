@@ -13,7 +13,7 @@ from qtpy import QtCore
 from qtpy.QtCore import QObject, Signal
 from bluesky.preprocessors import subs_wrapper
 import traceback
-
+import os
 
 def _get_asyncio_queue(loop):
     class AsyncioQueue(asyncio.Queue):
@@ -68,7 +68,13 @@ class QRunEngine(QObject):
 
         # TODO: pull from settings plugin
         from suitcase.mongo_normalized import Serializer
-        self.RE.subscribe(Serializer("mongodb://localhost:27017/mds", "mongodb://localhost:27017/fs"))
+        #TODO create single databroker db
+        #python-dotenv stores name-value pairs in .env (add to .gitginore)
+        username=os.getenv("USER_MONGO")
+        pw = os.getenv("PASSWD_MONGO")
+        print('PASSWORD', pw, username)
+        self.RE.subscribe(Serializer(f"mongodb://{username}:{pw}@localhost:27017/mds?authsource=mds",
+                                     f"mongodb://{username}:{pw}@localhost:27017/fs?authsource=fs"))
 
         self.queue = PriorityQueue()
 
