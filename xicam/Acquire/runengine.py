@@ -72,7 +72,6 @@ class QRunEngine(QObject):
         #python-dotenv stores name-value pairs in .env (add to .gitginore)
         username=os.getenv("USER_MONGO")
         pw = os.getenv("PASSWD_MONGO")
-        print('PASSWORD', pw, username)
         self.RE.subscribe(Serializer(f"mongodb://{username}:{pw}@localhost:27017/mds?authsource=mds",
                                      f"mongodb://{username}:{pw}@localhost:27017/fs?authsource=fs"))
 
