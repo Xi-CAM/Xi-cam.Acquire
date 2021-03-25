@@ -6,6 +6,7 @@ from happi import Client, Device, HappiItem, from_container
 from happi.backends.mongo_db import MongoBackend
 from happi.backends.json_db import JSONBackend
 from typhos.display import TyphosDeviceDisplay
+import os
 
 from xicam.core import msg
 from xicam.core.paths import site_config_dir, user_config_dir
