@@ -1,16 +1,15 @@
 from collections import OrderedDict
 
 import numpy as np
-
-from ophyd import (Device,
-                   SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
+from ophyd import (SingleTrigger, HDF5Plugin, ImagePlugin, StatsPlugin,
                    ROIPlugin, TransformPlugin, OverlayPlugin, FilePlugin)
 
 from ophyd.areadetector import EpicsSignalWithRBV
 from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
-from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite
-from ophyd.areadetector.plugins import PluginBase, ProcessPlugin
+from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStorePluginBase, \
+    FileStoreIterativeWrite, FileStoreHDF5, FileStoreBase
+from ophyd.areadetector.plugins import ProcessPlugin
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
 import time as ttime
@@ -34,7 +33,7 @@ class IndirectTrigger(SingleTrigger):
         super(IndirectTrigger, self).__init__(*args, **kwargs)
 
         # Force continuous mode when staging
-        self.stage_sigs.update([('cam.image_mode', 2)])
+        self.stage_sigs.update([(self.cam.image_mode, 2)])
 
 
 # compare with stats_plugin.py in
@@ -179,24 +178,6 @@ class StatsPluginCSX(PluginBase):
     total = ADCpt(EpicsSignalRO, 'Total_RBV')
 
 
-class StandardCam(IndirectTrigger, AreaDetector):
-    stats1 = Cpt(StatsPlugin, 'Stats1:')
-    stats2 = Cpt(StatsPlugin, 'Stats2:')
-    stats3 = Cpt(StatsPlugin, 'Stats3:')
-    stats4 = Cpt(StatsPlugin, 'Stats4:')
-    stats5 = Cpt(StatsPlugin, 'Stats5:')
-    roi1 = Cpt(ROIPlugin, 'ROI1:')
-    roi2 = Cpt(ROIPlugin, 'ROI2:')
-    roi3 = Cpt(ROIPlugin, 'ROI3:')
-    roi4 = Cpt(ROIPlugin, 'ROI4:')
-    # proc1 = Cpt(ProcessPlugin, 'Proc1:')
-    # trans1 = Cpt(TransformPlugin, 'Trans1:')
-
-
-class NoStatsCam(IndirectTrigger, AreaDetector):
-    pass
-
-
 class PutCompleteCapture(FilePlugin):
     def __init__(self, *args, **kwargs):
         super(PutCompleteCapture, self).__init__(*args, **kwargs)
@@ -246,11 +227,70 @@ class HDF5PluginSWMR(PutCompleteCapture, HDF5Plugin):
             set_and_wait(sig, val)
 
 
+class AdjustedFileStorePluginBase(FileStorePluginBase):
+    def stage(self):
+        # Make a filename.
+        filename, read_path, write_path = self.make_filename()
+
+        # Ensure we do not have an old file open.
+        if self.file_write_mode != 'Single':
+            set_and_wait(self.capture, 0)
+        # These must be set before parent is staged (specifically
+        # before capture mode is turned on. They will not be reset
+        # on 'unstage' anyway.
+        self.file_path.set(write_path).wait()
+        set_and_wait(self.file_name, filename)
+        FileStoreBase.stage(self)
+
+        # AD does this same templating in C, but we can't access it
+        # so we do it redundantly here in Python.
+        self._fn = self.file_template.get() % (read_path,
+                                               filename,
+                                               # file_number is *next* iteration
+                                               self.file_number.get())
+        self._fp = read_path
+        if not self.file_path_exists.get():
+            raise IOError("Path %s does not exist on IOC."
+                          "" % self.file_path.get())
 
 
-class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
+class AdjustedFileStoreHDF5(AdjustedFileStorePluginBase):
+    def __init__(self, *args, **kwargs):
+        super(AdjustedFileStoreHDF5, self).__init__(*args, **kwargs)
+        self.filestore_spec = 'AD_HDF5'  # spec name stored in resource doc
+        self.stage_sigs.update([('file_template', '%s%s_%6.6d.h5'),
+                                ('file_write_mode', 'Stream'),
+                                ('capture', 1)
+                                ])
+
+    def get_frames_per_point(self):
+        return self.num_capture.get()
+
+    def stage(self):
+        super().stage()
+        res_kwargs = {'frame_per_point': self.get_frames_per_point()}
+        self._generate_resource(res_kwargs)
+
+
+class AdjustedFileStoreHDF5IterativeWrite(AdjustedFileStoreHDF5, FileStoreIterativeWrite):
+    def __init__(self, *args, **kwargs):
+        super(AdjustedFileStoreHDF5IterativeWrite, self).__init__(*args, **kwargs)
+
+    def stage(self):
+        super(AdjustedFileStoreHDF5IterativeWrite, self).stage()
+        self._point_counter = itertools.count()
+
+
+class HDF5PluginWithFileStore(HDF5PluginSWMR, AdjustedFileStoreHDF5IterativeWrite):
     # AD v2.2.0 (at least) does not have this. It is present in v1.9.1.
     file_number_sync = None
+
+    # file_number = Cpt(SignalWithRBV, 'AdjustedFileNumber')
+
+    def __init__(self, *args, **kwargs):
+        super(HDF5PluginWithFileStore, self).__init__(*args, **kwargs)
+        self.stage_sigs.pop('capture', None)
+        self.stage_sigs.pop(self.capture, None)
 
     def get_frames_per_point(self):
         return self.num_capture.get()
@@ -259,6 +299,7 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
         # stash this so that it is available on resume
         self._ret = super().make_filename()
         return self._ret
+
 
 
 class FCCDCam(AreaDetectorCam):
@@ -407,40 +448,26 @@ class StageOnFirstTrigger(ProductionCamTriggered):
 
     def __init__(self, *args, **kwargs):
         super(StageOnFirstTrigger, self).__init__(*args, **kwargs)
-        self.trigger_staged = False
 
     @property
     def _warmed_up(self):
         return np.array(self.hdf5.array_size.get()).sum() > 0
 
-    def _trigger_stage(self):
+    def stage(self):
         if not self._warmed_up:
             self.hdf5.warmup()
-        # self._acquisition_signal.subscribe(self._acquire_changed)
+        set_and_wait(self.dg1.shutter_enabled, True)
+        # self.hdf5.stage()
         return super(StageOnFirstTrigger, self).stage()
 
-    def stage(self):
-        set_and_wait(self.dg1.shutter_enabled, True)
-        return [self]
-
     def unstage(self):
-        self.hdf5.capture.put(0)
         super(StageOnFirstTrigger, self).unstage()
-        self._acquisition_signal.clear_sub(self._acquire_changed)
-        self.trigger_staged = False
-
-    def trigger(self):
-        self.hdf5.capture.put(1)
-        if not self.trigger_staged:
-            self._trigger_stage()
-            self.trigger_staged = True
-
-        return super().trigger()
+        self.hdf5.unstage()
 
 
 def dark_plan(detector):
     # stash numcapture
-    num_capture = detector.hdf5.num_capture.get()
+    num_capture = yield from bps.rd(detector.hdf5.num_capture)
 
     # set to 1 temporarily
     detector.hdf5.num_capture.put(1)
@@ -460,7 +487,7 @@ def dark_plan(detector):
     yield from bps.stage(detector)
 
     # restore numcapture
-    detector.hdf5.num_capture.put(num_capture)
+    yield from bps.mv(detector.hdf5.num_capture, num_capture)
     return snapshot
 
 
