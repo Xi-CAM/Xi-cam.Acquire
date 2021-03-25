@@ -151,9 +151,13 @@ class AreaDetectorController(ControllerPlugin):
         if image is None:
             return
 
-        image = self.preprocess(image)
+        try:
+            image = self.preprocess(image)
+        except Exception as ex:
+            pass
+            # msg.logError(ex)
 
-        if self.imageview.image is None:
+        if self.imageview.image is None and len(image):
             self.imageview.setImage(image, autoHistogramRange=True, autoLevels=True)
         else:
             self.imageview.imageDisp = None
@@ -179,4 +183,4 @@ class AreaDetectorController(ControllerPlugin):
         self.error_text.setText('An error occurred while connecting to this device.')
 
     def acquire(self):
-        self.RE(count(self.coupled_devices), metadata=self.metadata)
+        self.RE(count(self.coupled_devices), **self.metadata)
