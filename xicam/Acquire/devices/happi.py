@@ -1,11 +1,12 @@
 from pathlib import Path
-import os
-
 from qtpy.QtCore import Qt, QItemSelection, Signal
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView
 from happi import Client, Device, HappiItem, from_container
+from happi.backends.mongo_db import MongoBackend
+from happi.backends.json_db import JSONBackend
 from typhos.display import TyphosDeviceDisplay
+import os
 
 from xicam.core import msg
 from xicam.core.paths import site_config_dir, user_config_dir
@@ -14,6 +15,9 @@ from xicam.gui import static
 
 happi_site_dir = str(Path(site_config_dir) / "happi")
 happi_user_dir = str(Path(user_config_dir) / "happi")
+
+USER_MONGO = os.getenv("USER_MONGO")
+PW_MONGO = os.getenv("PW_MONGO")
 
 
 class HappiClientTreeView(QTreeView):
@@ -57,11 +61,17 @@ class HappiClientModel(QStandardItemModel):
 
     def add_client(self, client: Client):
         self._clients.append(client)
-        client_item = QStandardItem(client.backend.path)
-        client_item.setData(client)
+        if isinstance(client.backend, JSONBackend):
+            client_item = QStandardItem(client.backend.path)
+
+        elif isinstance(client.backend, MongoBackend):
+            client_item = QStandardItem(f"{client.backend._client.HOST}/{client.backend._collection.full_name}")
         self.appendRow(client_item)
         for result in client.search():
+            # add an OphydItem
             self.add_device(client_item, result.item)
+        client_item.setData(client)
+
 
     def add_device(self, client_item: QStandardItem, device: Device):
         device_item = QStandardItem(device.name)
@@ -79,6 +89,16 @@ class HappiSettingsPlugin(SettingsPlugin):
             for db_file in Path(db_dir).glob('*.json'):
                 client = Client(path=str(db_file))
                 self._client_model.add_client(client)
+        try:
+            mongo_client = Client(MongoBackend(host='127.0.0.1',
+                                               db='happi',
+                                               collection='labview_static',
+                                               user=USER_MONGO,
+                                               pw=PW_MONGO,
+                                               timeout=None))
+            self._client_model.add_client(mongo_client)
+        except Exception as e: #TODO catch exception properly
+             msg.logError(e)
 
         widget = QWidget()
         layout = QVBoxLayout()
