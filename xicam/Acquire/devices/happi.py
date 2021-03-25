@@ -1,6 +1,4 @@
 from pathlib import Path
-import os
-
 from qtpy.QtCore import Qt, QItemSelection, Signal
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView
