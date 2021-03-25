@@ -17,6 +17,9 @@ from xicam.gui import static
 happi_site_dir = str(Path(site_config_dir) / "happi")
 happi_user_dir = str(Path(user_config_dir) / "happi")
 
+USER_MONGO = os.getenv("USER_MONGO")
+PW_MONGO = os.getenv("PW_MONGO")
+
 
 class HappiClientTreeView(QTreeView):
     sigShowControl = Signal(QWidget)
@@ -90,9 +93,9 @@ class HappiSettingsPlugin(SettingsPlugin):
         try:
             mongo_client = Client(MongoBackend(host='127.0.0.1',
                                                db='happi',
-                                               collection='labview',
-                                               user="cosmic",
-                                               pw="xpcs",
+                                               collection='labview_static',
+                                               user=USER_MONGO,
+                                               pw=PW_MONGO,
                                                timeout=None))
             self._client_model.add_client(mongo_client)
         except Exception as e: #TODO catch exception properly
