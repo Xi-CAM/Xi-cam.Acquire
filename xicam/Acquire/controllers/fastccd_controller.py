@@ -1,8 +1,10 @@
 import numpy as np
-
+from bluesky.plans import count
+import bluesky.plan_stubs as bps
 from databroker import Broker
 from databroker.core import BlueskyRun
 from happi import from_container
+from ophyd import Device
 from pydm.widgets import PyDMPushButton, PyDMLabel
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout
 from .areadetector import AreaDetectorController
@@ -15,7 +17,7 @@ FCCD_MASK = 0x1FFF
 
 
 class FastCCDController(AreaDetectorController):
-    def __init__(self, device):
+    def __init__(self, device: Device):
         super(FastCCDController, self).__init__(device)
 
         camera_layout = QVBoxLayout()
@@ -49,21 +51,50 @@ class FastCCDController(AreaDetectorController):
         # TODO: pull from settingsplugin
         self.db = Broker.named('local').v2
 
-        # Find coupled devices and add them so they'll be used with RE
-        self.coupled_devices += map(lambda search_result: from_container(search_result.device),
-                                    plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin").search(
-                                        prefix=device.prefix))
+        happi_settings = plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin")
 
+        # Find coupled devices and add them so they'll be used with RE
+        self.async_poll_devices = list(map(lambda search_result: from_container(search_result.device),
+                                           happi_settings.search(source='labview')))
+        self.async_poll_devices += map(lambda search_result: from_container(search_result.device),
+                                       happi_settings.search(
+                                           prefix=device.prefix))
+
+        self.async_poll_devices.remove(device)
 
         self.metadata["projections"] = [{'name': 'NXsas',
-                    'version': '0.1.0',
-                    'projection':
-                        {NXsas.DATA_PROJECTION_KEY: {'type': 'linked',
-                                               'stream': 'primary',
-                                               'location': 'event',
-                                               'field': f"{device.name}_image"}},
-                    'configuration': {}
-                    }]
+                                         'version': '0.1.0',
+                                         'projection':
+                                             {NXsas.DATA_PROJECTION_KEY: {'type': 'linked',
+                                                                          'stream': 'primary',
+                                                                          'location': 'event',
+                                                                          'field': f"{device.name}_image"},
+                                              NXsas.AZIMUTHAL_ANGLE_PROJECTION_KEY: {'type': 'linked',
+                                                                                     'stream': 'labview',
+                                                                                     'location': 'event',
+                                                                                     'field': 'detector_rotate'},
+                                              # TODO: source this from somewhere
+                                              NXsas.ENERGY_PROJECTION_KEY: {'type': 'linked',
+                                                                            'stream': 'labview',
+                                                                            'location': 'event',
+                                                                            'field': 'mono_energy'},
+                                              NXsas.INCIDENCE_ANGLE_PROJECTION_KEY: {'type': 'linked',
+                                                                                     'stream': 'labview',
+                                                                                     'location': 'event',
+                                                                                     'field': 'sample_wedge'},
+                                              # FIXME: Is this the right motor???
+                                              NXsas.DETECTOR_TRANSLATION_X_PROJECTION_KEY: {'type': 'linked',
+                                                                                            'stream': 'labview',
+                                                                                            'location': 'event',
+                                                                                            'field': 'det_translate'},
+                                              },
+                                         'configuration': {'detector_name': 'fastccd',
+                                                           'sdd': 0.5,
+                                                           'geometry_mode': 'transmission',
+                                                           'poni1': 480,
+                                                           'poni2': 1025
+                                                           }
+                                         }]
 
     # def preprocess(self, image):
     #
@@ -87,3 +118,18 @@ class FastCCDController(AreaDetectorController):
 
     def preprocess(self, image):
         return self._bitmask(image)
+
+    def _plan(self):
+        yield from bps.stage(self.device)
+        yield from bps.open_run()
+        status = yield from bps.trigger(self.device, group='primary-trigger')
+        while not status.done:
+            yield from bps.trigger_and_read(self.async_poll_devices, name='labview')
+            yield from bps.sleep(1)
+        yield from bps.create('primary')
+        yield from bps.read(self.device)
+        yield from bps.save()
+        yield from bps.unstage(self.device)
+
+    def acquire(self):
+        self.RE(self._plan(), **self.metadata)
