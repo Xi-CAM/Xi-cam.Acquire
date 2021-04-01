@@ -457,12 +457,11 @@ class StageOnFirstTrigger(ProductionCamTriggered):
         if not self._warmed_up:
             self.hdf5.warmup()
         set_and_wait(self.dg1.shutter_enabled, True)
-        # self.hdf5.stage()
         return super(StageOnFirstTrigger, self).stage()
 
     def unstage(self):
         super(StageOnFirstTrigger, self).unstage()
-        self.hdf5.unstage()
+        # self.hdf5.unstage()
 
 
 def dark_plan(detector):
@@ -484,8 +483,6 @@ def dark_plan(detector):
     yield from bps.mv(detector.dg1.shutter_enabled, True)
     # Restage.
     yield from bps.unstage(detector)
-    yield from bps.stage(detector)
-
     # restore numcapture
     yield from bps.mv(detector.hdf5.num_capture, num_capture)
     return snapshot
@@ -521,4 +518,5 @@ class DarkFrameFCCD(StageOnFirstTrigger):
         run_engine.RE.preprocessors.append(dark_frame_preprocessor)
 
 
-FastCCD = DarkFrameFCCD
+# FastCCD = DarkFrameFCCD
+FastCCD = StageOnFirstTrigger
