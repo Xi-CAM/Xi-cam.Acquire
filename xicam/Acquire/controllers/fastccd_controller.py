@@ -81,7 +81,8 @@ class FastCCDController(AreaDetectorController):
                                               NXsas.INCIDENCE_ANGLE_PROJECTION_KEY: {'type': 'linked',
                                                                                      'stream': 'labview',
                                                                                      'location': 'event',
-                                                                                     'field': 'sample_wedge'},
+                                                                                     'field': 'sample_rotate_steppertheta'},
+                                              # TODO: CHECK IF THIS EXISTS
                                               # FIXME: Is this the right motor???
                                               NXsas.DETECTOR_TRANSLATION_X_PROJECTION_KEY: {'type': 'linked',
                                                                                             'stream': 'labview',
@@ -117,11 +118,32 @@ class FastCCDController(AreaDetectorController):
             # self.device.
 
     def preprocess(self, image):
-        return self._bitmask(image)
+        return self._bitmask(image) - self.get_dark(Broker.named('local').v2[-1])
 
     def _plan(self):
-        yield from bps.stage(self.device)
         yield from bps.open_run()
+
+        # stash numcapture
+        num_capture = yield from bps.rd(self.device.hdf5.num_capture)
+
+        # set to 1 temporarily
+        self.device.hdf5.num_capture.put(1)
+
+        # Restage to ensure that dark frames goes into a separate file.
+        yield from bps.stage(self.device)
+        yield from bps.mv(self.device.dg1.shutter_enabled, False)
+        # The `group` parameter passed to trigger MUST start with
+        # bluesky-darkframes-trigger.
+        yield from bps.trigger_and_read([self.device], name='dark')
+        yield from bps.mv(self.device.dg1.shutter_enabled, True)
+        # Restage.
+        yield from bps.unstage(self.device)
+        # restore numcapture
+        yield from bps.mv(self.device.hdf5.num_capture, num_capture)
+
+        # Dark frames finished, moving on to data
+
+        yield from bps.stage(self.device)
         status = yield from bps.trigger(self.device, group='primary-trigger')
         while not status.done:
             yield from bps.trigger_and_read(self.async_poll_devices, name='labview')
