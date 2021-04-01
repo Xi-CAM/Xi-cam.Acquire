@@ -17,7 +17,7 @@ happi_site_dir = str(Path(site_config_dir) / "happi")
 happi_user_dir = str(Path(user_config_dir) / "happi")
 
 USER_MONGO = os.getenv("USER_MONGO")
-PW_MONGO = os.getenv("PW_MONGO")
+PW_MONGO = os.getenv("PASSWD_MONGO")
 
 
 class HappiClientTreeView(QTreeView):
