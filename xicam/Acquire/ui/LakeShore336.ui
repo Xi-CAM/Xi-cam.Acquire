@@ -40,7 +40,7 @@
     </widget>
    </item>
    <item>
-    <widget class="TyphosCompositeSignalPanel" name="signal_panel">
+    <widget class="TyphosCompositeSignalPanel" name="signal_panel" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
        <horstretch>0</horstretch>
@@ -95,8 +95,8 @@
      </property>
      <property name="curves">
       <stringlist>
-       <string>{&quot;channel&quot;: &quot;ca://${prefix}TemperatureCelsius&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;#0c3dff&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
-       <string>{&quot;channel&quot;: &quot;ca://${prefix}HeaterOutput&quot;, &quot;name&quot;: &quot;Heater [%]&quot;, &quot;color&quot;: &quot;#fc2431&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 1, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+       <string>{&quot;channel&quot;: &quot;ca://${prefix}TemperatureKelvin&quot;, &quot;name&quot;: &quot;Temp [C]&quot;, &quot;color&quot;: &quot;#fc0052&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 3, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+       <string>{&quot;channel&quot;: &quot;ca://${prefix}HeaterOutput&quot;, &quot;name&quot;: &quot;Heater [%]&quot;, &quot;color&quot;: &quot;#1ea7ff&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 2, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
       </stringlist>
      </property>
      <property name="timeSpan">
@@ -107,22 +107,14 @@
      </property>
     </widget>
    </item>
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>PyDMTimePlot</class>
+   <extends>QGraphicsView</extends>
+   <header>pydm.widgets.timeplot</header>
+  </customwidget>
   <customwidget>
    <class>TyphosSignalPanel</class>
    <extends>QWidget</extends>
@@ -137,11 +129,7 @@
    <class>TyphosDisplayTitle</class>
    <extends>QFrame</extends>
    <header>typhos.display</header>
-  </customwidget>
-  <customwidget>
-   <class>PyDMTimePlot</class>
-   <extends>QGraphicsView</extends>
-   <header>pydm.widgets.timeplot</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>
