@@ -10,6 +10,7 @@ from qtpy.QtWidgets import QGroupBox, QVBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
 from xicam.SAXS.ontology import NXsas
+from xicam.core.msg import logError
 
 
 # Pulled from NDPluginFastCCD.h:11
@@ -54,11 +55,22 @@ class FastCCDController(AreaDetectorController):
         happi_settings = plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin")
 
         # Find coupled devices and add them so they'll be used with RE
-        self.async_poll_devices = list(map(lambda search_result: from_container(search_result.device),
+        def from_device_container(container) -> Device:
+            try:
+                return from_container(container.device)
+            except Exception as e:
+                logError(e)
+                return None
+
+
+        self.async_poll_devices = list(map(from_device_container,
                                            happi_settings.search(source='labview')))
-        self.async_poll_devices += map(lambda search_result: from_container(search_result.device),
+        self.async_poll_devices += map(from_device_container,
                                        happi_settings.search(
                                            prefix=device.prefix))
+
+        # Remove errored from_container devices (Nones)
+        self.async_poll_devices = list(filter(lambda device: device, self.async_poll_devices))
 
         self.async_poll_devices.remove(device)
 
