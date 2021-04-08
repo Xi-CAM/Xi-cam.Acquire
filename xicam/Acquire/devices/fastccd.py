@@ -300,6 +300,11 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, AdjustedFileStoreHDF5IterativeWrit
         self._ret = super().make_filename()
         return self._ret
 
+    def stage(self):
+        if np.array(self.array_size.get()).sum() == 0:
+            self.warmup()
+        super(HDF5PluginWithFileStore, self).stage()
+
 
 
 class FCCDCam(AreaDetectorCam):
