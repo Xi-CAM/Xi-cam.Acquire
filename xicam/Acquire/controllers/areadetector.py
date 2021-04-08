@@ -141,7 +141,7 @@ class AreaDetectorController(ControllerPlugin):
         self.cached_frame = value
 
     def updateFrame(self):
-        if self.cached_frame is not None:
+        if self.cached_frame is not None and len(self.cached_frame):
             self.setFrame(self.cached_frame)
             self.cached_frame = None
 
