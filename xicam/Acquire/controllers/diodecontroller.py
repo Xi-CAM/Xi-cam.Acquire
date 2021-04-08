@@ -1,6 +1,7 @@
 from bluesky.plans import scan
 from bluesky_widgets.utils.streaming import stream_documents_into_runs
 from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky.callbacks.core import CallbackBase
 from databroker import Broker
 from databroker.core import BlueskyRun
 from happi import from_container
@@ -28,6 +29,7 @@ class DiodeController(ControllerPlugin):
         self.plot_panel = CatalogImagePlotView()
 
         full_layout = QHBoxLayout()
+        self.setLayout(full_layout)
         config_layout = QVBoxLayout()
         scan_panel = QGroupBox('Diode Scan')
         scan_panel.setLayout(config_layout)
@@ -52,36 +54,30 @@ class DiodeController(ControllerPlugin):
         # Remove errored from_container devices (Nones)
         self.async_poll_devices = list(filter(lambda device: device, self.async_poll_devices))
         self.async_poll_devices.remove(device)
+        self.device_dict = {device.name : device for device in self.async_poll_devices}
         # get the diode as detector
-        detector = DetectorDiode()
-        diode = detector.diode
+        diode = device.diode
 
-        device_selector = QComboBox()
-        device_selector.addItems(self.async_poll_devices)
+        self.device_selector = QComboBox()
+        self.device_selector.addItems(list(self.device_dict.keys()))
 
         input_layout = QFormLayout()
-        start_range = QLineEdit()
-        stop_range = QLineEdit()
-        n_steps = QLineEdit()
-        step_size = QLineEdit()
-        input_layout.addRow('Start Range', start_range)
-        input_layout.addRow('Stop Range', stop_range)
-        input_layout.addRow('N Steps', n_steps)
-        input_layout.addRow('Step Size', step_size)
+        self.start_range = QLineEdit()
+        self.stop_range = QLineEdit()
+        self.n_steps = QLineEdit()
+        self.step_size = QLineEdit()
+        input_layout.addRow('Start Range', self.start_range)
+        input_layout.addRow('Stop Range', self.stop_range)
+        input_layout.addRow('N Steps', self.n_steps)
+        input_layout.addRow('Step Size', self.step_size)
 
-        config_layout.addWidget(device_selector)
+        config_layout.addWidget(self.device_selector)
         config_layout.addLayout(input_layout)
 
         button_layout = QHBoxLayout()
         start_button = QPushButton("Start")
         button_layout.addWidget(start_button)
-        start_button.clicked.connect(self.push_start(det=diode,
-                                                     motor=device_selector.currentText(),
-                                                     start=start_range.currentText(),
-                                                     stop=stop_range.currentText(),
-                                                     steps=n_steps.currentText()
-                                                     )
-                                     )
+        start_button.clicked.connect(self.push_start)
         config_layout.addLayout(button_layout)
 
         #TODO get data from bluesky run in callback
@@ -89,12 +85,33 @@ class DiodeController(ControllerPlugin):
         # self.RE.subscribe(stream_documents_into_runs(self.plot_panel.setCatalog))
         # self.plot_panel.setData(runs)
 
+
     def plot_data(self, name, doc):
         self.plot_panel.setCatalog(doc)
 
 
-    def push_start(self, det, motor, start, stop, steps):
-        self.RE(scan([det], motor, start, stop, steps, {'event': self.plot_data}))
+    def push_start(self):
+        det=self.device
+        motor= self.device_dict[self.device_selector.currentText()]
+        start = float(self.start_range.text())
+        stop = float(self.stop_range.text())
+        steps = int(self.n_steps.text())
+        self.RE(scan([det], motor, start, stop, steps), {'event': self.plot_data})
+
+
+class RunDispatcher(CallBackBase):
+    def __init__(self):
+
+    def __call__(self, name, doc, validate= False):
+        stream_documents_into_runs()
+
+    def start(self):
+
+    def stop(self):
+
+    def descriptor(self):
+
+    def event(self):
 
 
 
