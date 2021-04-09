@@ -89,12 +89,15 @@ class QRunEngine(QObject):
             priority, (args, kwargs) = priority_plan.priority, priority_plan.args
 
             self.sigStart.emit()
+            msg.showBusy()
             try:
                 self.RE(*args, **kwargs)
             except Exception as ex:
                 msg.showMessage("An error occured during a Bluesky plan. See the Xi-CAM log for details.")
                 msg.logError(ex)
                 self.sigException.emit(ex)
+            finally:
+                msg.showReady()
             self.sigFinish.emit()
 
     @wraps(RunEngine.__call__)
