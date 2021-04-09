@@ -26,7 +26,8 @@ class DiodeController(ControllerPlugin):
         super(DiodeController, self).__init__(device)
 
         self.RE = get_run_engine()
-        self.plot_panel = CatalogImagePlotView()
+        self.plot_panel = CatalogImagePlotView(field_filter=None)
+
 
         full_layout = QHBoxLayout()
         self.setLayout(full_layout)
@@ -85,9 +86,8 @@ class DiodeController(ControllerPlugin):
         # self.RE.subscribe(stream_documents_into_runs(self.plot_panel.setCatalog))
         # self.plot_panel.setData(runs)
 
-
-    def plot_data(self, name, doc):
-        self.plot_panel.setCatalog(doc)
+        # Wireup display to receive completed runs
+        self.run_dispatcher = RunDispatcher(self.plot_panel.setCatalog)
 
 
     def push_start(self):
@@ -96,26 +96,25 @@ class DiodeController(ControllerPlugin):
         start = float(self.start_range.text())
         stop = float(self.stop_range.text())
         steps = int(self.n_steps.text())
-        self.RE(scan([det], motor, start, stop, steps), {'event': self.plot_data})
+        self.RE(scan([det], motor, start, stop, steps), self.run_dispatcher)
 
 
-class RunDispatcher(CallBackBase):
-    def __init__(self):
+class RunDispatcher(CallbackBase):
+    def __init__(self, callback):
+        self.callback = callback
+        self._run = None
+        #
+        self._document_collector = stream_documents_into_runs(self.add_new_run)
 
-    def __call__(self, name, doc, validate= False):
-        stream_documents_into_runs()
+    def __call__(self, name, doc, validate=False):
+        self._document_collector(name, doc, validate)
+        super(RunDispatcher, self).__call__(name, doc, validate)
 
-    def start(self):
+    def add_new_run(self, run):
+        self._run = run
 
-    def stop(self):
-
-    def descriptor(self):
-
-    def event(self):
-
-
-
-
+    def stop(self, doc):
+        self.callback(self._run)
 
 
 if __name__ == '__main__':
