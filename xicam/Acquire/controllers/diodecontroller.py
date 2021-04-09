@@ -89,10 +89,9 @@ class DiodeController(ControllerPlugin):
         # Wireup display to receive completed runs
         self.run_dispatcher = RunDispatcher(self.plot_panel.setCatalog)
 
-
     def push_start(self):
-        det=self.device
-        motor= self.device_dict[self.device_selector.currentText()]
+        det = self.device
+        motor = self.device_dict[self.device_selector.currentText()]
         start = float(self.start_range.text())
         stop = float(self.stop_range.text())
         steps = int(self.n_steps.text())
