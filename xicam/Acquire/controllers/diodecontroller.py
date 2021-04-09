@@ -28,11 +28,11 @@ class DiodeController(ControllerPlugin):
         self.RE = get_run_engine()
         self.plot_panel = CatalogImagePlotView(field_filter=None)
 
-
         full_layout = QHBoxLayout()
         self.setLayout(full_layout)
         config_layout = QVBoxLayout()
         scan_panel = QGroupBox('Diode Scan')
+        scan_panel.setMaximumSize(200, 250)
         scan_panel.setLayout(config_layout)
         full_layout.addWidget(self.plot_panel)
         full_layout.addWidget(scan_panel)
