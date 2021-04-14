@@ -1,5 +1,5 @@
 from pathlib import Path
-from qtpy.QtCore import Qt, QItemSelection, Signal
+from qtpy.QtCore import Qt, QItemSelection, Signal, QModelIndex
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView
 from happi import Client, Device, HappiItem, from_container
@@ -34,26 +34,35 @@ class HappiClientTreeView(QTreeView):
         selected_indexes = selected.indexes()
         if not selected_indexes:
             return
-        data = selected_indexes[0].data(Qt.UserRole + 1)
-        if isinstance(data, HappiItem):
-            self._activate(data)
+        index = selected_indexes[0]
+        self._activate(index)
 
-    def _activate(self, item: HappiItem):
-        device = from_container(item)
+    def _activate(self, index: QModelIndex):
+        display = index.data(HappiClientModel.displayRole)  # try to get display from model
 
-        try:
-            device.wait_for_connection()
-        except TimeoutError as ex:
-            msg.logError(ex)
+        if not display:
+            happi_item = index.data(HappiClientModel.happiItemRole)
+            device = from_container(happi_item)
 
-        controller_name = item.extraneous.get("controller_class", "typhos")
-        controller = pluginmanager.get_plugin_by_name(controller_name, 'ControllerPlugin')
-        display = controller(device)
+            try:
+                device.wait_for_connection()
+            except TimeoutError as ex:
+                msg.logError(ex)
+
+            controller_name = happi_item.extraneous.get("controller_class", "typhos")
+            controller = pluginmanager.get_plugin_by_name(controller_name, 'ControllerPlugin')
+            display = controller(device)
+
+            # Stash display back on the model
+            self.model().setData(index, display, HappiClientModel.displayRole)
+
         self.sigShowControl.emit(display)
 
 
 class HappiClientModel(QStandardItemModel):
     """Qt standard model that stores happi clients."""
+    happiItemRole = Qt.UserRole + 1
+    displayRole = Qt.UserRole + 2
 
     def __init__(self, *args, **kwargs):
         super(HappiClientModel, self).__init__(*args, **kwargs)
@@ -75,7 +84,7 @@ class HappiClientModel(QStandardItemModel):
 
     def add_device(self, client_item: QStandardItem, device: Device):
         device_item = QStandardItem(device.name)
-        device_item.setData(device)
+        device_item.setData(device, self.happiItemRole)
         client_item.appendRow(device_item)
 
 
@@ -108,6 +117,7 @@ class HappiSettingsPlugin(SettingsPlugin):
         icon = QIcon(str(static.path('icons/calibrate.png')))
         name = "Devices"
         super(HappiSettingsPlugin, self).__init__(icon, name, widget)
+        self._device_view.expandAll()
         self.restore()
 
     @property
