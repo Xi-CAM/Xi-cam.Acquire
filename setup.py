@@ -19,6 +19,7 @@ setup(
     description='The CAMERA platform for synchrotron data management, visualization, and reduction. The xicam.gui '
                 'package contains all gui code of the Xi-cam platform, as part of the xicam namespace package. For the '
                 'backend components, see "xicam.core".',
+    long_description_content_type='text/markdown',
 
     # The project's main homepage.
     url='https://github.com/ronpandolfi/Xi-cam',
