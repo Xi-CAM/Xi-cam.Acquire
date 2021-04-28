@@ -16,9 +16,8 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version='0.1.0',
 
-    description='The CAMERA platform for synchrotron data management, visualization, and reduction. The xicam.gui '
-                'package contains all gui code of the Xi-cam platform, as part of the xicam namespace package. For the '
-                'backend components, see "xicam.core".',
+    description="Xi-CAM Acquire Plugin",
+    long_description="Supports acquisition of data",
     long_description_content_type='text/markdown',
 
     # The project's main homepage.
