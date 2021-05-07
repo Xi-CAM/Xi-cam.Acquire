@@ -16,9 +16,9 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version='0.1.0',
 
-    description='The CAMERA platform for synchrotron data management, visualization, and reduction. The xicam.gui '
-                'package contains all gui code of the Xi-cam platform, as part of the xicam namespace package. For the '
-                'backend components, see "xicam.core".',
+    description="Xi-CAM Acquire Plugin",
+    long_description="Supports acquisition of data",
+    long_description_content_type='text/markdown',
 
     # The project's main homepage.
     url='https://github.com/ronpandolfi/Xi-cam',
@@ -67,7 +67,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'happi', 'bluesky-darkframes',
+    install_requires=['xicam', 'numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'happi', 'bluesky-darkframes',
                                                                                   'ipykernel!=5.0*,!=5.1.0',
                       'pyqode.python', 'typhos', 'pydm', 'caproto',
                       # 'git+https://github.com/pcdshub/typhos.git',
@@ -104,7 +104,8 @@ setup(
         'areadetector = xicam.Acquire.controllers.areadetector:AreaDetectorController',
         'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
         'fastccd_controller = xicam.Acquire.controllers.fastccd_controller:FastCCDController',
-        'typhos = xicam.Acquire.controllers.typhoscontroller:TyphosController'],
+        'typhos = xicam.Acquire.controllers.typhoscontroller:TyphosController',
+        'diodecontroller = xicam.Acquire.controllers.diodecontroller:DiodeController'],
         'xicam.plugins.DataResourcePlugin': [
             'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
             'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],
