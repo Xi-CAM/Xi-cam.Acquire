@@ -67,7 +67,8 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['xicam', 'numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd', 'happi', 'bluesky-darkframes',
+    # ophyd 1.6 series (1.6.1) doesn't work with the Acquire live view (stuck on "waiting for data...")
+    install_requires=['xicam', 'numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd==1.5.4', 'happi', 'bluesky-darkframes',
                                                                                   'ipykernel!=5.0*,!=5.1.0',
                       'pyqode.python', 'typhos', 'pydm', 'caproto',
                       # 'git+https://github.com/pcdshub/typhos.git',
