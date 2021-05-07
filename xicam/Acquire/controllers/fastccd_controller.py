@@ -6,7 +6,7 @@ from databroker.core import BlueskyRun
 from happi import from_container
 from ophyd import Device
 from pydm.widgets import PyDMPushButton, PyDMLabel
-from qtpy.QtWidgets import QGroupBox, QVBoxLayout
+from qtpy.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
 from xicam.SAXS.ontology import NXsas
@@ -33,17 +33,35 @@ class FastCCDController(AreaDetectorController):
         camera_layout.addWidget(
             PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.shutdown.setpoint_pvname}', label='Shutdown'))
 
-        dg_layout = QVBoxLayout()
+        dg_layout = QHBoxLayout()
         dg_panel = QGroupBox('Delay Gen State')
         dg_panel.setLayout(dg_layout)
 
-        dg_layout.addWidget(PyDMLabel(init_channel=f'ca://{device.dg1.state.pvname}'))
+        dg_state_layout = QVBoxLayout()
+        dg_layout.addLayout(dg_state_layout)
+        dg_state_layout.addWidget(PyDMLabel(init_channel=f'ca://{device.dg1.state.pvname}'))
 
-        dg_layout.addWidget(
+        dg_state_layout.addWidget(
             PyDMPushButton(pressValue=1, init_channel=f'ca://{device.dg1.initialize.setpoint_pvname}',
                            label='Initialize'))
-        dg_layout.addWidget(
+        dg_state_layout.addWidget(
             PyDMPushButton(pressValue=1, init_channel=f'ca://{device.dg1.reset.setpoint_pvname}', label='Reset'))
+
+        dg_shutter_layout = QVBoxLayout()
+        dg_layout.addLayout(dg_shutter_layout)
+        dg_shutter_layout.addWidget(PyDMLabel(init_channel=f'ca://{device.dg1.shutter_enabled.pvname}'))
+        dg_shutter_layout.addWidget(
+            PyDMPushButton(pressValue=0, init_channel=f'ca://{device.dg1.shutter_enabled.setpoint_pvname}',
+                           label='Enable Trigger')
+        )
+        dg_shutter_layout.addWidget(
+            PyDMPushButton(pressValue=2, init_channel=f'ca://{device.dg1.shutter_enabled.setpoint_pvname}',
+                           label='Keep Closed')
+        )
+        dg_shutter_layout.addWidget(
+            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.dg1.shutter_enabled.setpoint_pvname}',
+                           label='Keep Open')
+        )
 
         self.hlayout.addWidget(camera_panel)
         self.hlayout.addWidget(dg_panel)
