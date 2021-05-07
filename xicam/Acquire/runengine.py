@@ -15,6 +15,9 @@ from bluesky.preprocessors import subs_wrapper
 import traceback
 import os
 
+from xicam.Acquire.widgets.dialogs import MetadataDialog
+
+
 def _get_asyncio_queue(loop):
     class AsyncioQueue(asyncio.Queue):
         '''
@@ -136,6 +139,14 @@ class QRunEngine(QObject):
         #     if param:
         #         ParameterDialog(param).exec_()
 
+        reserved = set(kwargs.keys()).union(['plan_type', 'plan_args', 'scan_id', 'time', 'uid'])
+        self._metadata_dialog = MetadataDialog(reserved=reserved)
+        self._metadata_dialog.open()
+        self._metadata_dialog.accepted.connect(partial(self._put, self.metadata_dialog, priority, args, kwargs))
+
+    def _put(self, dialog: MetadataDialog, priority, args, kwargs):
+        metadata = dialog.get_metadata()
+        kwargs.update(metadata)
         self.queue.put(PrioritizedPlan(priority, (args, kwargs)))
 
 
