@@ -142,7 +142,7 @@ class QRunEngine(QObject):
         reserved = set(kwargs.keys()).union(['plan_type', 'plan_args', 'scan_id', 'time', 'uid'])
         self._metadata_dialog = MetadataDialog(reserved=reserved)
         self._metadata_dialog.open()
-        self._metadata_dialog.accepted.connect(partial(self._put, self.metadata_dialog, priority, args, kwargs))
+        self._metadata_dialog.accepted.connect(partial(self._put, self._metadata_dialog, priority, args, kwargs))
 
     def _put(self, dialog: MetadataDialog, priority, args, kwargs):
         metadata = dialog.get_metadata()
