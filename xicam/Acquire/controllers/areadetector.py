@@ -25,6 +25,8 @@ from contextlib import contextmanager
 from xicam.Acquire.runengine import get_run_engine
 import time
 
+from typing import Callable
+
 
 class ADImageView(DynImageView,
                   PixelCoordinates,
@@ -38,7 +40,7 @@ class ADImageView(DynImageView,
 class AreaDetectorController(ControllerPlugin):
     viewclass = ADImageView
 
-    def __init__(self, device, preprocess_enabled=True, maxfps=10):
+    def __init__(self, device, preprocess_enabled=True, maxfps=2):
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
         self.preprocess_enabled = preprocess_enabled
@@ -98,22 +100,34 @@ class AreaDetectorController(ControllerPlugin):
 
         self.thread = None
         self._last_timestamp = time.time()
-        self.update_timer = QTimer()
-        self.update_timer.setInterval(1000 // maxfps)
-        self.update_timer.timeout.connect(self.updateFrame)
-        self.update_timer.start()
+        # self.update_timer = QTimer()
+        # self.update_timer.setInterval(1000 // maxfps)
+        # self.update_timer.timeout.connect(self.updateFrame)
+        # self.update_timer.start()
 
-        self.device.image1.shaped_image.subscribe(self.cacheFrame, 'value')
+        # self.device.image1.shaped_image.subscribe(self.cacheFrame, 'value')
 
+        self.setPassive(True)
         self.passive.toggled.connect(self.setPassive)
 
-    def _trigger_thread(self):
+    def _update_thread(self, update_action:Callable):
         while True:
-            while 1. / (time.time() - self._last_timestamp) > self.maxfps:
-                time.sleep(1. / self.maxfps)
+            if self.cached_frame is not None:
+                time.sleep(.01)
+                continue
 
-            if self.passive.isChecked() or self.visibleRegion().isEmpty():
+            t = time.time()
+            max_period = 1 / self.maxfps
+            current_elapsed = t - self._last_timestamp
+
+            if current_elapsed < max_period:
+                time.sleep(max_period-current_elapsed)
+
+            if not self.passive.isChecked():
                 break
+
+            if self.visibleRegion().isEmpty():
+                continue
 
             try:
                 if not self.device.connected:
@@ -121,21 +135,29 @@ class AreaDetectorController(ControllerPlugin):
                         msg.showMessage('Connecting to device...')
                         self.device.wait_for_connection()
 
-                self.device.trigger()
+                update_action()
             except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'An error occurred communicating with this device.')
                 msg.logError(ex)
 
+    def _get_frame(self):
+        self.cached_frame = self.device.image1.shaped_image.get()
+        threads.invoke_in_main_thread(self.updateFrame)
+
     def setPassive(self, passive):
+        if self.thread:
+            self.thread.cancel()
+            self.thread = None
+
         if passive:
-            if self.thread:
-                self.thread.cancel()
-                self.thread = None
+            update_action = self._get_frame
         else:
-            self.thread = threads.QThreadFuture(self._trigger_thread,
-                                                except_slot=lambda ex: self.device.device_obj.unstage())
-            self.thread.start()
+            update_action = self.device.trigger
+
+        self.thread = threads.QThreadFuture(self._update_thread, update_action, showBusy=False,
+                                                except_slot=lambda ex: self.device.unstage())
+        self.thread.start()
 
     def cacheFrame(self, value, **_):
         self.cached_frame = value
