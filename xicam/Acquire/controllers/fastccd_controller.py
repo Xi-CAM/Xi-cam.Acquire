@@ -153,23 +153,25 @@ class FastCCDController(AreaDetectorController):
     def _plan(self):
         yield from bps.open_run()
 
-        # stash numcapture
+        # stash numcapture and shutter_enabled
         num_capture = yield from bps.rd(self.device.hdf5.num_capture)
+        shutter_enabled = yield from bps.rd(self.device.dg1.shutter_enabled)
 
         # set to 1 temporarily
         self.device.hdf5.num_capture.put(1)
 
         # Restage to ensure that dark frames goes into a separate file.
         yield from bps.stage(self.device)
-        yield from bps.mv(self.device.dg1.shutter_enabled, False)
+        yield from bps.mv(self.device.dg1.shutter_enabled, 2)
         # The `group` parameter passed to trigger MUST start with
         # bluesky-darkframes-trigger.
         yield from bps.trigger_and_read([self.device], name='dark')
         yield from bps.mv(self.device.dg1.shutter_enabled, True)
         # Restage.
         yield from bps.unstage(self.device)
-        # restore numcapture
+        # restore numcapture and shutter_enabled
         yield from bps.mv(self.device.hdf5.num_capture, num_capture)
+        yield from bps.mv(self.device.dg1.shutter_enabled, shutter_enabled)
 
         # Dark frames finished, moving on to data
 

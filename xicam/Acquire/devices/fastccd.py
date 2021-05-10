@@ -470,8 +470,9 @@ class StageOnFirstTrigger(ProductionCamTriggered):
 
 
 def dark_plan(detector):
-    # stash numcapture
+    # stash numcapture and shutter_enabled
     num_capture = yield from bps.rd(detector.hdf5.num_capture)
+    shutter_enabled = yield from bps.rd(detector.dg1.shutter_enabled)
 
     # set to 1 temporarily
     detector.hdf5.num_capture.put(1)
@@ -479,17 +480,17 @@ def dark_plan(detector):
     # Restage to ensure that dark frames goes into a separate file.
     yield from bps.unstage(detector)
     yield from bps.stage(detector)
-    yield from bps.mv(detector.dg1.shutter_enabled, False)
+    yield from bps.mv(detector.dg1.shutter_enabled, 2)
     # The `group` parameter passed to trigger MUST start with
     # bluesky-darkframes-trigger.
     yield from bps.trigger(detector, group='bluesky-darkframes-trigger')
     yield from bps.wait('bluesky-darkframes-trigger')
     snapshot = bluesky_darkframes.SnapshotDevice(detector)
-    yield from bps.mv(detector.dg1.shutter_enabled, True)
     # Restage.
     yield from bps.unstage(detector)
-    # restore numcapture
+    # restore numcapture and shutter_enabled
     yield from bps.mv(detector.hdf5.num_capture, num_capture)
+    yield from bps.mv(detector.dg1.shutter_enabled, shutter_enabled)
     return snapshot
 
 
