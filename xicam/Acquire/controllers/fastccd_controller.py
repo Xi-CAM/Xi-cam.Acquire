@@ -10,6 +10,7 @@ from qtpy.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
 from xicam.SAXS.ontology import NXsas
+from xicam.SAXS.operations.correction import correct
 from xicam.core.msg import logError
 
 
@@ -65,7 +66,7 @@ class FastCCDController(AreaDetectorController):
 
         self.hlayout.addWidget(camera_panel)
         self.hlayout.addWidget(dg_panel)
-        self.passive.deleteLater()  # active mode is useless for fastccd at COSMIC-Scattering
+        self.passive.setVisible(False)  # active mode is useless for fastccd at COSMIC-Scattering
 
         # TODO: pull from settingsplugin
         self.db = Broker.named('local').v2
@@ -142,13 +143,10 @@ class FastCCDController(AreaDetectorController):
         darks = np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
         return self._bitmask(darks)
 
-    def setPassive(self, passive: bool):
-        if self.RE.isIdle:
-            ...
-            # self.device.
-
     def preprocess(self, image):
-        return self._bitmask(image) - self.get_dark(Broker.named('local').v2[-1])
+        flats = np.ones_like(image)
+        darks = self.get_dark(Broker.named('local').v2[-1])
+        return correct(image, flats, darks)
 
     def _plan(self):
         yield from bps.open_run()
