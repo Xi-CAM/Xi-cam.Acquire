@@ -140,6 +140,10 @@ class AreaDetectorController(ControllerPlugin):
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'An error occurred communicating with this device.')
                 msg.logError(ex)
+            except Exception as e:
+                threads.invoke_in_main_thread(self.error_text.setText,
+                                              'Unknown error occurred when attempting to communicate with device.')
+                msg.logError(e)
 
     def _get_frame(self):
         self.cached_frame = self.device.image1.shaped_image.get()
