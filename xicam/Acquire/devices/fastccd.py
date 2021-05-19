@@ -461,7 +461,6 @@ class StageOnFirstTrigger(ProductionCamTriggered):
     def stage(self):
         if not self._warmed_up:
             self.hdf5.warmup()
-        set_and_wait(self.dg1.shutter_enabled, True)
         return super(StageOnFirstTrigger, self).stage()
 
     def unstage(self):
