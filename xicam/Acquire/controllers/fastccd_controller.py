@@ -161,7 +161,6 @@ class FastCCDController(AreaDetectorController):
         # The `group` parameter passed to trigger MUST start with
         # bluesky-darkframes-trigger.
         yield from bps.trigger_and_read([self.device], name='dark')
-        yield from bps.mv(self.device.dg1.shutter_enabled, True)
         # Restage.
         yield from bps.unstage(self.device)
         # restore numcapture and shutter_enabled
