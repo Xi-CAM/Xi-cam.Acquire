@@ -142,11 +142,6 @@ class FastCCDController(AreaDetectorController):
         darks = np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
         return self._bitmask(darks)
 
-    def setPassive(self, passive: bool):
-        if self.RE.isIdle:
-            ...
-            # self.device.
-
     def preprocess(self, image):
         return self._bitmask(image) - self.get_dark(Broker.named('local').v2[-1])
 
