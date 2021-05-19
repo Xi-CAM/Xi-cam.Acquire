@@ -65,7 +65,7 @@ class FastCCDController(AreaDetectorController):
 
         self.hlayout.addWidget(camera_panel)
         self.hlayout.addWidget(dg_panel)
-        self.passive.deleteLater()  # active mode is useless for fastccd at COSMIC-Scattering
+        self.passive.setVisible(False)  # active mode is useless for fastccd at COSMIC-Scattering
 
         # TODO: pull from settingsplugin
         self.db = Broker.named('local').v2
