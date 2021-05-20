@@ -53,12 +53,16 @@ class AreaDetectorController(ControllerPlugin):
 
         self.cached_frame = None
 
+        self.bg_correction = QCheckBox("Background Correction")
+        self.bg_correction.setChecked(True)
+
         self.imageview = self.viewclass()
         self.passive = QCheckBox('Passive Mode')
         self.passive.setChecked(True)
         self.error_text = pg.TextItem('Waiting for data...')
         self.imageview.view.addItem(self.error_text)
         self.layout().addWidget(self.imageview)
+        self.layout().addWidget(self.bg_correction)
         self.layout().addWidget(self.passive)
         self.metadata = {}
 

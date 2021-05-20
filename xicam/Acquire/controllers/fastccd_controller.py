@@ -144,9 +144,11 @@ class FastCCDController(AreaDetectorController):
         return self._bitmask(darks)
 
     def preprocess(self, image):
-        flats = np.ones_like(image)
-        darks = self.get_dark(Broker.named('local').v2[-1])
-        return correct(image, flats, darks)
+        if self.bg_correction.isChecked():
+            flats = np.ones_like(image)
+            darks = self.get_dark(Broker.named('local').v2[-1])
+            return correct(image, flats, darks)
+        return image
 
     def _plan(self):
         yield from bps.open_run()
