@@ -1,6 +1,7 @@
 import time
 from queue import PriorityQueue, Empty
 from dataclasses import dataclass, field
+from pymongo.errors import OperationFailure
 from typing import Any
 
 from bluesky.utils import DuringTask
@@ -75,11 +76,16 @@ class QRunEngine(QObject):
         #python-dotenv stores name-value pairs in .env (add to .gitginore)
         username=os.getenv("USER_MONGO")
         pw = os.getenv("PASSWD_MONGO")
-        self.RE.subscribe(Serializer(f"mongodb://{username}:{pw}@localhost:27017/mds?authsource=mds",
-                                     f"mongodb://{username}:{pw}@localhost:27017/fs?authsource=fs"))
+        try:
+            self.RE.subscribe(Serializer(f"mongodb://{username}:{pw}@localhost:27017/mds?authsource=mds",
+                                         f"mongodb://{username}:{pw}@localhost:27017/fs?authsource=fs"))
+        except OperationFailure as err:
+            msg.notifyMessage("Could not connect to local mongo database.",
+                              title="xicam.Acquire Error",
+                              level=msg.ERROR)
+            msg.logError(err)
 
         self.queue = PriorityQueue()
-
         self.process_queue()
 
     @threads.method(threadkey="run_engine", showBusy=False)
