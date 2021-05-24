@@ -45,16 +45,15 @@ class MetadataDialog(QDialog):
     parameter = ScalableGroup(name='blah')
     parameter.restoreState(_parameter_state)
 
-    def __init__(self, reserved: Iterable[str], parent=None, window_flags=Qt.WindowFlags()):
+    def __init__(self, reserved: Iterable[str] = None, parent=None, window_flags=Qt.WindowFlags()):
         super(MetadataDialog, self).__init__(parent, window_flags)
 
-        self.reserved = set(reserved)
+        self.reserved = set(reserved or [])
 
         self.parameter_tree = pt.ParameterTree(showHeader=False)
         self.parameter_tree.setParameters(self.parameter, showTop=False)
 
         calibrate_button = QPushButton("&Acquire")
-        calibrate_button.setDefault(True)
 
         self.buttons = QDialogButtonBox(Qt.Horizontal)
         # Add calibration button that accepts the dialog (closes with 1 status)
