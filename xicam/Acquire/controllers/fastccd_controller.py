@@ -10,6 +10,7 @@ from qtpy.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
 from xicam.SAXS.ontology import NXsas
+from xicam.SAXS.operations.correction import correct
 from xicam.core.msg import logError
 
 
@@ -143,7 +144,11 @@ class FastCCDController(AreaDetectorController):
         return self._bitmask(darks)
 
     def preprocess(self, image):
-        return self._bitmask(image) - self.get_dark(Broker.named('local').v2[-1])
+        if self.bg_correction.isChecked():
+            flats = np.ones_like(image)
+            darks = self.get_dark(Broker.named('local').v2[-1])
+            return correct(image, flats, darks)
+        return image
 
     def _plan(self):
         yield from bps.open_run()
