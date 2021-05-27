@@ -141,13 +141,13 @@ class FastCCDController(AreaDetectorController):
 
     def get_dark(self, run_catalog: BlueskyRun):
         darks = np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
-        return self._bitmask(darks)
+        return darks
 
     def preprocess(self, image):
         if self.bg_correction.isChecked():
             flats = np.ones_like(image)
             darks = self.get_dark(Broker.named('local').v2[-1])
-            return correct(image, flats, darks)
+            return correct(np.expand_dims(image, 0), flats, darks)[0]
         return image
 
     def _plan(self):
