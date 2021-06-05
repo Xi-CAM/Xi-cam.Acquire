@@ -11,6 +11,7 @@ from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
 from xicam.SAXS.ontology import NXsas
 from xicam.core.msg import logError, notifyMessage, ERROR
+from xicam.SAXS.operations.correction import correct
 
 
 # Pulled from NDPluginFastCCD.h:11
@@ -148,10 +149,14 @@ class FastCCDController(AreaDetectorController):
 
     def get_dark(self, run_catalog: BlueskyRun):
         darks = np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
-        return self._bitmask(darks)
+        return darks
 
     def preprocess(self, image):
-        return self._bitmask(image) - self.get_dark(Broker.named('local').v2[-1])
+        if self.bg_correction.isChecked():
+            flats = np.ones_like(image)
+            darks = self.get_dark(Broker.named('local').v2[-1])
+            return correct(np.expand_dims(image, 0), flats, darks)[0]
+        return image
 
     def _plan(self):
         yield from bps.open_run()
