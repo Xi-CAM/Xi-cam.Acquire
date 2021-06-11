@@ -81,19 +81,32 @@ class AreaDetectorController(ControllerPlugin):
         config_panel = QGroupBox('Configuration')
         config_panel.setLayout(config_layout)
 
+        # Create the Acquire panel and its buttons
         acquire_layout = QVBoxLayout()
-        acquire_button = QPushButton('Acquire')
-        acquire_button.clicked.connect(self.acquire)
-        acquire_layout.addWidget(acquire_button)
+        self.acquire_button = QPushButton('Acquire')
+        self.acquire_button.clicked.connect(self.acquire)
+        acquire_layout.addWidget(self.acquire_button)
+
+        self.abort_button = QPushButton('Abort')
+        self.abort_button.clicked.connect(self.abort)
+        acquire_layout.addWidget(self.abort_button)
 
         acquire_panel = QGroupBox('Acquire')
         acquire_panel.setLayout(acquire_layout)
+
+        # Set initial acquire button states
+        self._finished()
 
         self.hlayout = QHBoxLayout()
 
         self.hlayout.addWidget(config_panel)
         self.hlayout.addWidget(acquire_panel)
         self.layout().addLayout(self.hlayout)
+
+        # Connect relevant RE signals to handle Acquire and Abort button enable states
+        self.RE.sigFinish.connect(self._finished)
+        self.RE.sigStart.connect(self._started)
+        self.RE.sigAbort.connect(self._aborted)
 
         # WIP
         # self.lutCheck = QCheckBox()
@@ -214,3 +227,19 @@ class AreaDetectorController(ControllerPlugin):
 
     def acquire(self):
         self.RE(count(self.coupled_devices), **self.metadata)
+
+    def abort(self):
+        self.RE.abort('Acquisition aborted by Xi-cam user.')
+
+    def _started(self):
+        self.abort_button.setEnabled(True)
+        self.abort_button.setStyleSheet('background-color:red;color:white;font-weight:bold;')
+        self.acquire_button.setEnabled(False)
+
+    def _finished(self):
+        self.abort_button.setEnabled(False)
+        self.abort_button.setStyleSheet('')
+        self.acquire_button.setEnabled(True)
+
+    def _aborted(self):
+        self._finished()
