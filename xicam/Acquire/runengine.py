@@ -103,7 +103,7 @@ class QRunEngine(QObject):
                 self.RE(*args, **kwargs)
             except RunEngineInterrupted:
                 msg.showMessage("Run has been aborted by the user.")
-            except RuntimeError as ex:
+            except Exception as ex:
                 msg.showMessage("An error occured during a Bluesky plan. See the Xi-CAM log for details.")
                 msg.logError(ex)
                 self.sigException.emit(ex)
