@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pymongo.errors import OperationFailure
 from typing import Any
 
-from bluesky.utils import DuringTask
+from bluesky.utils import DuringTask, RunEngineInterrupted
 from xicam.core import msg, threads
 from xicam.gui.utils import ParameterizedPlan, ParameterDialog
 from functools import wraps, partial
@@ -101,7 +101,9 @@ class QRunEngine(QObject):
             msg.showBusy()
             try:
                 self.RE(*args, **kwargs)
-            except Exception as ex:
+            except RunEngineInterrupted:
+                msg.showMessage("Run has been aborted by the user.")
+            except RuntimeError as ex:
                 msg.showMessage("An error occured during a Bluesky plan. See the Xi-CAM log for details.")
                 msg.logError(ex)
                 self.sigException.emit(ex)
