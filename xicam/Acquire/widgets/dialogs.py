@@ -29,8 +29,8 @@ class MetadataDialog(QDialog):
     preview, and calibrate the image data.
     """
 
-    default_parameters_dict = [{'name': 'Sample Name',
-                                'label': 'sample_name',
+    default_parameters_dict = [{'title': 'Sample Name',
+                                'name': 'sample_name',
                                 'type': 'str',
                                 'renamable': False,
                                 'removable': False,
@@ -40,7 +40,7 @@ class MetadataDialog(QDialog):
                                              name='blah',
                                              type='group').saveState()
 
-    _qsettings_key = 'xicam.Acquire.metadata'
+    _qsettings_key = 'xicam.Acquire.metadata.v1'
     _parameter_state = QSettings().value(_qsettings_key, defaultValue=_default_parameter_state)
     parameter = ScalableGroup(name='blah')
     parameter.restoreState(_parameter_state)
@@ -72,7 +72,7 @@ class MetadataDialog(QDialog):
         self.setLayout(outer_layout)
 
     def get_metadata(self):
-        return self.parameter.saveState('user')['children']
+        return {key: value['value'] for key, value in self.parameter.saveState('user')['children'].items()}
 
     def accept(self):
         intersection = set(self.get_metadata().keys()).intersection(self.reserved)
