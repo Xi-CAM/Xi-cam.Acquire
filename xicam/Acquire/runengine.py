@@ -2,7 +2,7 @@ import time
 from queue import PriorityQueue, Empty
 from dataclasses import dataclass, field
 from pymongo.errors import OperationFailure
-from typing import Any
+from typing import Any, Iterable
 
 from bluesky.utils import DuringTask
 from xicam.core import msg, threads
@@ -15,9 +15,14 @@ from qtpy.QtCore import QObject, Signal
 from bluesky.preprocessors import subs_wrapper
 import traceback
 import os
+import numpy as np
 
 from xicam.Acquire.widgets.dialogs import MetadataDialog
 
+
+def _L2norm(x, y):
+    "works on (3, 5) and ((0, 3), (4, 0))"
+    return np.sqrt(np.sum((np.asarray(x) - np.asarray(y)) ** 2))
 
 def _get_asyncio_queue(loop):
     class AsyncioQueue(asyncio.Queue):
@@ -69,12 +74,15 @@ class QRunEngine(QObject):
 
         self.RE = RunEngine(context_managers=[], during_task=DuringTask(), **kwargs)
         self.RE.subscribe(self.sigDocumentYield.emit)
+        self.RE.waiting_hook = self.waiting_hook
+
+        self._status_futures = set()
 
         # TODO: pull from settings plugin
         from suitcase.mongo_normalized import Serializer
-        #TODO create single databroker db
-        #python-dotenv stores name-value pairs in .env (add to .gitginore)
-        username=os.getenv("USER_MONGO")
+        # TODO create single databroker db
+        # python-dotenv stores name-value pairs in .env (add to .gitginore)
+        username = os.getenv("USER_MONGO")
         pw = os.getenv("PASSWD_MONGO")
         try:
             self.RE.subscribe(Serializer(f"mongodb://{username}:{pw}@localhost:27017/mds?authsource=mds",
@@ -155,6 +163,62 @@ class QRunEngine(QObject):
         kwargs.update(metadata)
         self.queue.put(PrioritizedPlan(priority, (args, kwargs)))
 
+    def waiting_hook(self, status):
+        if not isinstance(status, Iterable):
+            status = [status]
+        for status in status:
+            if status:
+                self._status_futures.add(status)
+                msg.showBusy()
+                if hasattr(status, 'watch') and not status.done:
+                    status.watch(self.watcher)
+            else:
+                self._prune_statuses()
+                if not len(self._status_futures):
+                    msg.showReady()
+
+    def watcher(self,
+                name=None,
+                current=None,
+                initial=None,
+                target=None,
+                unit='units',
+                precision=None,
+                fraction=None,
+                time_elapsed=None,
+                time_remaining=None):
+
+        if all(x is not None for x in (current, initial, target)):
+            # Display a proper progress bar.
+            total = round(_L2norm(target, initial), precision or 3)
+            # make sure we ignore overshoot to prevent tqdm from exploding.
+            n = np.clip(round(_L2norm(current, initial), precision or 3), 0, total)
+            # Compute this only if the status object did not provide it.
+            if time_elapsed is None:
+                time_elapsed = time.time() - self.creation_time
+            # TODO Account for 'fraction', which might in some special cases
+            # differ from the naive computation above.
+            # TODO Account for 'time_remaining' which might in some special
+            # cases differ from the naive computaiton performed by
+            # format_meter.
+            msg.showProgress(value=n, maxval=total)
+            # meter = tqdm.format_meter(n=n, total=total, elapsed=time_elapsed,
+            #                           unit=unit,
+            #                           prefix=name,
+            #                           ncols=self.ncols)
+        # else:
+        # # Simply display completeness.
+        # if name is None:
+        #     name = ''
+        # if self.status_objs[pos].done:
+        #     meter = name + ' [Complete.]'
+        # else:
+        #     meter = name + ' [In progress. No progress bar available.]'
+        # meter += ' ' * (self.ncols - len(meter))
+        # meter = meter[:self.ncols]
+
+    def _prune_statuses(self):
+        self._status_futures = set(filter(lambda status: status.done, self._status_futures))
 
 RE = None
 

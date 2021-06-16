@@ -176,6 +176,7 @@ class FastCCDController(AreaDetectorController):
 
         yield from bps.stage(self.device)
         status = yield from bps.trigger(self.device, group='primary-trigger')
+        self.RE.waiting_hook(status)
         while not status.done:
             yield from bps.trigger_and_read(self.async_poll_devices, name='labview')
             yield from bps.sleep(1)
