@@ -63,6 +63,7 @@ class QRunEngine(QObject):
     sigStart = Signal()
     sigPause = Signal()
     sigResume = Signal()
+    sigReady = Signal()
 
     def __init__(self, **kwargs):
         super(QRunEngine, self).__init__()
@@ -85,6 +86,8 @@ class QRunEngine(QObject):
                               level=msg.ERROR)
             msg.logError(err)
 
+        self.sigFinished.connect(self._check_if_ready)
+
         self.queue = PriorityQueue()
         self.process_queue()
 
@@ -103,7 +106,7 @@ class QRunEngine(QObject):
                 self.RE(*args, **kwargs)
             except RunEngineInterrupted:
                 msg.showMessage("Run has been aborted by the user.")
-            except Exception as ex:
+            except RuntimeError as ex:
                 msg.showMessage("An error occured during a Bluesky plan. See the Xi-CAM log for details.")
                 msg.logError(ex)
                 self.sigException.emit(ex)
@@ -156,6 +159,11 @@ class QRunEngine(QObject):
         metadata = dialog.get_metadata()
         kwargs.update(metadata)
         self.queue.put(PrioritizedPlan(priority, (args, kwargs)))
+
+    def _check_if_ready(self):
+        # RE has finished processing everything in the queue
+        if self.RE.state == 'idle' and len(self.queue) == 0:
+            self.sigReady.emit()
 
 
 RE = None
