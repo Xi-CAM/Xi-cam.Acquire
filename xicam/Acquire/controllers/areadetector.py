@@ -1,6 +1,7 @@
 import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.ptime as ptime
+from PyQt5.QtWidgets import QProgressBar
 from pyqtgraph import GradientWidget
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QCheckBox, QGroupBox, QFormLayout, QHBoxLayout, QPushButton
 from qtpy.QtCore import QTimer
@@ -40,7 +41,7 @@ class ADImageView(DynImageView,
 class AreaDetectorController(ControllerPlugin):
     viewclass = ADImageView
 
-    def __init__(self, device, preprocess_enabled=True, maxfps=2):
+    def __init__(self, device, preprocess_enabled=True, maxfps=4):  # Note: typical query+processing+display <.2s
         super(AreaDetectorController, self).__init__(device)
         self.maxfps = maxfps
         self.preprocess_enabled = preprocess_enabled
@@ -51,7 +52,7 @@ class AreaDetectorController(ControllerPlugin):
 
         self.coupled_devices = []
 
-        self.cached_frame = None
+        self.getting_frame = False
 
         self.bg_correction = QCheckBox("Background Correction")
         self.bg_correction.setChecked(True)
@@ -83,8 +84,10 @@ class AreaDetectorController(ControllerPlugin):
 
         acquire_layout = QVBoxLayout()
         acquire_button = QPushButton('Acquire')
+        self.acquire_progress = QProgressBar()
         acquire_button.clicked.connect(self.acquire)
         acquire_layout.addWidget(acquire_button)
+        acquire_layout.addWidget(self.acquire_progress)
 
         acquire_panel = QGroupBox('Acquire')
         acquire_panel.setLayout(acquire_layout)
@@ -116,21 +119,11 @@ class AreaDetectorController(ControllerPlugin):
 
     def _update_thread(self, update_action:Callable):
         while True:
-            if self.cached_frame is not None:
-                time.sleep(.01)
-                continue
-
-            t = time.time()
-            max_period = 1 / self.maxfps
-            current_elapsed = t - self._last_timestamp
-
-            if current_elapsed < max_period:
-                time.sleep(max_period-current_elapsed)
-
             if not self.passive.isChecked():
                 break
 
             if self.visibleRegion().isEmpty():
+                time.sleep(1 / self.maxfps)
                 continue
 
             try:
@@ -149,9 +142,38 @@ class AreaDetectorController(ControllerPlugin):
                                               'Unknown error occurred when attempting to communicate with device.')
                 msg.logError(e)
 
-    def _get_frame(self):
-        self.cached_frame = self.device.image1.shaped_image.get()
-        threads.invoke_in_main_thread(self.updateFrame)
+            num_exposures_counter = self.device.cam.num_exposures_counter.get()
+            num_exposures = self.device.cam.num_exposures.get()
+            num_captured = self.device.hdf5.num_captured.get()
+            num_capture = self.device.hdf5.num_capture.get()
+            capturing = self.device.hdf5.capture.get()
+            if capturing:
+                current = num_exposures_counter + num_captured * num_exposures
+                total = num_exposures * num_capture
+            elif num_exposures == 1:  # Show 'busy' for just one exposure
+                current = 0
+                total = 0
+            else:
+                current = num_exposures_counter
+                total = num_exposures
+            threads.invoke_in_main_thread(self._update_progress, current, total)
+
+            while self.getting_frame:
+                time.sleep(.01)
+
+            t = time.time()
+            max_period = 1 / self.maxfps
+            current_elapsed = t - self._last_timestamp
+
+            print('times:', current_elapsed, max_period)
+            if current_elapsed < max_period:
+                time.sleep(max_period - current_elapsed)
+
+            self._last_timestamp = time.time()
+
+    def _update_progress(self, current, total):
+        self.acquire_progress.setMaximum(total)
+        self.acquire_progress.setValue(current)
 
     def setPassive(self, passive):
         if self.thread:
@@ -159,33 +181,29 @@ class AreaDetectorController(ControllerPlugin):
             self.thread = None
 
         if passive:
-            update_action = self._get_frame
+            update_action = self.updateFrame
         else:
             update_action = self.device.trigger
 
         self.thread = threads.QThreadFuture(self._update_thread, update_action, showBusy=False,
-                                                except_slot=lambda ex: self.device.unstage())
+                                            except_slot=lambda ex: self.device.unstage())
         self.thread.start()
 
     def cacheFrame(self, value, **_):
         self.cached_frame = value
 
     def updateFrame(self):
-        if self.cached_frame is not None and len(self.cached_frame):
-            self.setFrame(self.cached_frame)
-            self.cached_frame = None
+        image = self.device.image1.shaped_image.get()
+        if image is not None and len(image):
+            try:
+                image = self.preprocess(image)
+            except Exception as ex:
+                pass
+                # msg.logError(ex)
+            self.getting_frame = True
+            threads.invoke_in_main_thread(self._setFrame, image)
 
-    def setFrame(self, value=None, **kwargs):
-        image = value
-
-        if image is None:
-            return
-
-        try:
-            image = self.preprocess(image)
-        except Exception as ex:
-            pass
-            # msg.logError(ex)
+    def _setFrame(self, image):
 
         if self.imageview.image is None and len(image):
             self.imageview.setImage(image, autoHistogramRange=True, autoLevels=True)
@@ -202,8 +220,8 @@ class AreaDetectorController(ControllerPlugin):
 
             self._autolevel = False
 
-        self.error_text.setText(f'FPS: {1. / (time.time() - self._last_timestamp):.2f}')
-        self._last_timestamp = time.time()
+        self.error_text.setText(f'Update time: {(time.time() - self._last_timestamp):.2f} s')
+        self.getting_frame = False
 
     def preprocess(self, image):
         return image
