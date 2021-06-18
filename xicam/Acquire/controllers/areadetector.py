@@ -165,7 +165,6 @@ class AreaDetectorController(ControllerPlugin):
             max_period = 1 / self.maxfps
             current_elapsed = t - self._last_timestamp
 
-            print('times:', current_elapsed, max_period)
             if current_elapsed < max_period:
                 time.sleep(max_period - current_elapsed)
 
