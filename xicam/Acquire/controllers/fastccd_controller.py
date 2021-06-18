@@ -147,7 +147,8 @@ class FastCCDController(AreaDetectorController):
         if self.bg_correction.isChecked():
             flats = np.ones_like(image)
             darks = self.get_dark(Broker.named('local').v2[-1])
-            return correct(np.expand_dims(image, 0), flats, darks)[0]
+            image = correct(np.expand_dims(image, 0), flats, darks)[0]
+        image = np.delete(image, slice(980, 1070), 1)
         return image
 
     def _plan(self):
