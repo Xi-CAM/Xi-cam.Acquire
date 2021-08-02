@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pymongo.errors import OperationFailure
 from typing import Any
 
-from bluesky.utils import DuringTask
+from bluesky.utils import DuringTask, RunEngineInterrupted
 from xicam.core import msg, threads
 from xicam.gui.utils import ParameterizedPlan, ParameterDialog
 from functools import wraps, partial
@@ -63,6 +63,7 @@ class QRunEngine(QObject):
     sigStart = Signal()
     sigPause = Signal()
     sigResume = Signal()
+    sigReady = Signal()
 
     def __init__(self, **kwargs):
         super(QRunEngine, self).__init__()
@@ -85,6 +86,8 @@ class QRunEngine(QObject):
                               level=msg.ERROR)
             msg.logError(err)
 
+        self.sigFinished.connect(self._check_if_ready)
+
         self.queue = PriorityQueue()
         self.process_queue()
 
@@ -101,7 +104,9 @@ class QRunEngine(QObject):
             msg.showBusy()
             try:
                 self.RE(*args, **kwargs)
-            except Exception as ex:
+            except RunEngineInterrupted:
+                msg.showMessage("Run has been aborted by the user.")
+            except RuntimeError as ex:
                 msg.showMessage("An error occured during a Bluesky plan. See the Xi-CAM log for details.")
                 msg.logError(ex)
                 self.sigException.emit(ex)
@@ -154,6 +159,11 @@ class QRunEngine(QObject):
         metadata = dialog.get_metadata()
         kwargs.update(metadata)
         self.queue.put(PrioritizedPlan(priority, (args, kwargs)))
+
+    def _check_if_ready(self):
+        # RE has finished processing everything in the queue
+        if self.RE.state == 'idle' and len(self.queue) == 0:
+            self.sigReady.emit()
 
 
 RE = None

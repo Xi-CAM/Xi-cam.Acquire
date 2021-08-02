@@ -325,6 +325,8 @@ class FCCDCam(AreaDetectorCam):
     shutdown = ADCpt(EpicsSignal, "Shutdown")
     state = ADCpt(EpicsSignalRO, "State")
 
+    error_status = ADCpt(EpicsSignalRO, "ErrorStatus")
+
     def __init__(self, *args, temp_pv=None, **kwargs):
         self._temp_pv = temp_pv
         super().__init__(*args, **kwargs)

@@ -10,8 +10,8 @@ from qtpy.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
 from xicam.SAXS.ontology import NXsas
+from xicam.core.msg import logError, notifyMessage, ERROR
 from xicam.SAXS.operations.correction import correct
-from xicam.core.msg import logError
 
 
 # Pulled from NDPluginFastCCD.h:11
@@ -68,6 +68,10 @@ class FastCCDController(AreaDetectorController):
         self.hlayout.addWidget(dg_panel)
         self.passive.setVisible(False)  # active mode is useless for fastccd at COSMIC-Scattering
 
+        # Subscribe to the error status PV so we can create notifications
+        # (only relevant for cam init errors for now)
+        self.device.cam.error_status.subscribe(self.report_error, 'value')
+
         # TODO: pull from settingsplugin
         self.db = Broker.named('local').v2
 
@@ -80,7 +84,6 @@ class FastCCDController(AreaDetectorController):
             except Exception as e:
                 logError(e)
                 return None
-
 
         self.async_poll_devices = list(map(from_device_container,
                                            happi_settings.search(source='labview')))
@@ -135,6 +138,11 @@ class FastCCDController(AreaDetectorController):
     #         return image-dark
     #     except AttributeError:
     #         return image
+
+    def report_error(self, value, **_):
+        text = bytes(value).decode()
+        title = "Camera Initialization Error"
+        notifyMessage(text, title=title, level=ERROR)
 
     def _bitmask(self, array):
         return array.astype(int) & FCCD_MASK
