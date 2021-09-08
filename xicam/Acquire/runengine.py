@@ -86,7 +86,7 @@ class QRunEngine(QObject):
                               level=msg.ERROR)
             msg.logError(err)
 
-        self.sigFinished.connect(self._check_if_ready)
+        self.sigFinish.connect(self._check_if_ready)
 
         self.queue = PriorityQueue()
         self.process_queue()
