@@ -16,6 +16,7 @@ from xicam.SAXS.operations.correction import correct
 
 # Pulled from NDPluginFastCCD.h:11
 FCCD_MASK = 0x1FFF
+dark_exposures = 1
 
 
 class FastCCDController(AreaDetectorController):
@@ -149,6 +150,8 @@ class FastCCDController(AreaDetectorController):
 
     def get_dark(self, run_catalog: BlueskyRun):
         darks = np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
+        if darks.ndim == 3:
+            darks = np.mean(darks, axis=0)
         return darks
 
     def preprocess(self, image):
@@ -156,7 +159,7 @@ class FastCCDController(AreaDetectorController):
             try:
                 flats = np.ones_like(image)
                 darks = self.get_dark(Broker.named('local').v2[-1])
-                image = correct(np.expand_dims(image, 0), flats, darks)[0]
+                image = correct(np.expand_dims(image, 0), flats, darks, exposures=dark_exposures)[0]
             except Exception:
                 pass
         image = np.delete(image, slice(966, 1084), 1)
@@ -165,12 +168,16 @@ class FastCCDController(AreaDetectorController):
     def _plan(self):
         yield from bps.open_run()
 
-        # stash numcapture and shutter_enabled
+        # stash numcapture and shutter_enabled and num_exposures
         num_capture = yield from bps.rd(self.device.hdf5.num_capture)
         shutter_enabled = yield from bps.rd(self.device.dg1.shutter_enabled)
+        # num_exposures = yield from bps.rd(self.device.cam.num_exposures)
 
         # set to 1 temporarily
-        self.device.hdf5.num_capture.put(1)
+        self.device.hdf5.num_capture.put(10)
+
+        # Always do 10 exposures for dark
+        # self.device.cam.num_exposures.put(dark_exposures)
 
         # Restage to ensure that dark frames goes into a separate file.
         yield from bps.stage(self.device)
@@ -180,9 +187,10 @@ class FastCCDController(AreaDetectorController):
         yield from bps.trigger_and_read([self.device], name='dark')
         # Restage.
         yield from bps.unstage(self.device)
-        # restore numcapture and shutter_enabled
+        # restore numcapture and shutter_enabled and num_exposures
         yield from bps.mv(self.device.hdf5.num_capture, num_capture)
         yield from bps.mv(self.device.dg1.shutter_enabled, shutter_enabled)
+        # yield from bps.mv(self.device.cam.num_exposures, num_exposures)
 
         # Dark frames finished, moving on to data
 
