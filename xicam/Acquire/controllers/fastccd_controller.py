@@ -159,7 +159,7 @@ class FastCCDController(AreaDetectorController):
             try:
                 flats = np.ones_like(image)
                 darks = self.get_dark(Broker.named('local').v2[-1])
-                image = correct(np.expand_dims(image, 0), flats, darks, exposures=dark_exposures)[0]
+                image = correct(np.expand_dims(image, 0), flats, darks)[0]
             except Exception:
                 pass
         image = np.delete(image, slice(966, 1084), 1)
