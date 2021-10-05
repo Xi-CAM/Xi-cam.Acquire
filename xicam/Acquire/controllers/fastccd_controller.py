@@ -162,7 +162,7 @@ class FastCCDController(AreaDetectorController):
                 image = correct(np.expand_dims(image, 0), flats, darks)[0]
             except Exception:
                 pass
-        image = np.delete(image, slice(966, 1084), 1)
+        image = np.delete(image, slice(966, 1084), 1).astype(np.uint16) & 0x1FFF
         return image
 
     def _plan(self):
