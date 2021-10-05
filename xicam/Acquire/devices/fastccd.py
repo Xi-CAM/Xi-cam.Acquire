@@ -389,8 +389,8 @@ class ProductionCamBase(DetectorBase):
 class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
-               write_path_template='/data/fccd_data/%Y/%m/%d/',
-               root='/data/',
+               write_path_template='/remote-data/fccd_data/%Y/%m/%d/',
+               root='/remote-data/',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
 
     def stop(self):
