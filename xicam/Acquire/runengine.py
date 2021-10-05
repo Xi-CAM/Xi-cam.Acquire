@@ -112,6 +112,7 @@ class QRunEngine(QObject):
                 self.sigException.emit(ex)
             finally:
                 msg.showReady()
+            self.queue.task_done()
             self.sigFinish.emit()
 
     @wraps(RunEngine.__call__)
@@ -162,7 +163,7 @@ class QRunEngine(QObject):
 
     def _check_if_ready(self):
         # RE has finished processing everything in the queue
-        if self.RE.state == 'idle' and len(self.queue) == 0:
+        if self.RE.state == 'idle' and self.queue.unfinished_tasks == 0:
             self.sigReady.emit()
 
 
