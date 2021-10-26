@@ -142,8 +142,9 @@ class FastCCDController(AreaDetectorController):
 
     def report_error(self, value, **_):
         text = bytes(value).decode()
-        title = "Camera Initialization Error"
-        notifyMessage(text, title=title, level=ERROR)
+        if text:
+            title = "Camera Initialization Error"
+            notifyMessage(text, title=title, level=ERROR)
 
     def _bitmask(self, array):
         return array.astype(int) & FCCD_MASK
