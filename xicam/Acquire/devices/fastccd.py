@@ -216,15 +216,17 @@ class HDF5PluginSWMR(PutCompleteCapture, HDF5Plugin):
 
         original_vals = {sig: sig.get() for sig in sigs}
 
-        for sig, val in sigs.items():
-            ttime.sleep(0.1)  # abundance of caution
-            set_and_wait(sig, val)
+        try:
+            for sig, val in sigs.items():
+                ttime.sleep(0.1)  # abundance of caution
+                set_and_wait(sig, val)
 
-        ttime.sleep(2)  # wait for acquisition
+        finally:
+            ttime.sleep(2)  # wait for acquisition
 
-        for sig, val in reversed(list(original_vals.items())):
-            ttime.sleep(0.1)
-            set_and_wait(sig, val)
+            for sig, val in reversed(list(original_vals.items())):
+                ttime.sleep(0.1)
+                set_and_wait(sig, val)
 
 
 class AdjustedFileStorePluginBase(FileStorePluginBase):

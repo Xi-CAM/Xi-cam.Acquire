@@ -175,36 +175,39 @@ class FastCCDController(AreaDetectorController):
         shutter_enabled = yield from bps.rd(self.device.dg1.shutter_enabled)
         # num_exposures = yield from bps.rd(self.device.cam.num_exposures)
 
-        # set to 1 temporarily
-        self.device.hdf5.num_capture.put(10)
+        try:
+            # set to 1 temporarily
+            self.device.hdf5.num_capture.put(10)
 
-        # Always do 10 exposures for dark
-        # self.device.cam.num_exposures.put(dark_exposures)
+            # Always do 10 exposures for dark
+            # self.device.cam.num_exposures.put(dark_exposures)
 
-        # Restage to ensure that dark frames goes into a separate file.
-        yield from bps.stage(self.device)
-        yield from bps.mv(self.device.dg1.shutter_enabled, 2)
-        # The `group` parameter passed to trigger MUST start with
-        # bluesky-darkframes-trigger.
-        yield from bps.trigger_and_read([self.device], name='dark')
-        # Restage.
-        yield from bps.unstage(self.device)
-        # restore numcapture and shutter_enabled and num_exposures
-        yield from bps.mv(self.device.hdf5.num_capture, num_capture)
-        yield from bps.mv(self.device.dg1.shutter_enabled, shutter_enabled)
-        # yield from bps.mv(self.device.cam.num_exposures, num_exposures)
+            # Restage to ensure that dark frames goes into a separate file.
+            yield from bps.stage(self.device)
+            yield from bps.mv(self.device.dg1.shutter_enabled, 2)
+            # The `group` parameter passed to trigger MUST start with
+            # bluesky-darkframes-trigger.
+            yield from bps.trigger_and_read([self.device], name='dark')
+            # Restage.
+            yield from bps.unstage(self.device)
+            # restore numcapture and shutter_enabled and num_exposures
+        finally:
+            yield from bps.mv(self.device.hdf5.num_capture, num_capture)
+            yield from bps.mv(self.device.dg1.shutter_enabled, shutter_enabled)
+            # yield from bps.mv(self.device.cam.num_exposures, num_exposures)
 
-        # Dark frames finished, moving on to data
-
-        yield from bps.stage(self.device)
-        status = yield from bps.trigger(self.device, group='primary-trigger')
-        while not status.done:
-            yield from bps.trigger_and_read(self.async_poll_devices, name='labview')
-            yield from bps.sleep(1)
-        yield from bps.create('primary')
-        yield from bps.read(self.device)
-        yield from bps.save()
-        yield from bps.unstage(self.device)
+        try:
+            # Dark frames finished, moving on to data
+            yield from bps.stage(self.device)
+            status = yield from bps.trigger(self.device, group='primary-trigger')
+            while not status.done:
+                yield from bps.trigger_and_read(self.async_poll_devices, name='labview')
+                yield from bps.sleep(1)
+            yield from bps.create('primary')
+            yield from bps.read(self.device)
+            yield from bps.save()
+        finally:
+            yield from bps.unstage(self.device)
 
     def acquire(self):
         self.RE(self._plan(), **self.metadata)
