@@ -144,6 +144,26 @@ class AreaDetectorController(ControllerPlugin):
                         self.device.wait_for_connection()
 
                 update_action()
+
+                num_exposures_counter = self.device.cam.num_exposures_counter.get()
+                num_exposures = self.device.cam.num_exposures.get()
+                num_captured = self.device.hdf5.num_captured.get()
+                num_capture = self.device.hdf5.num_capture.get()
+                capturing = self.device.hdf5.capture.get()
+                if capturing:
+                    current = num_exposures_counter + num_captured * num_exposures
+                    total = num_exposures * num_capture
+                elif num_exposures == 1:  # Show 'busy' for just one exposure
+                    current = 0
+                    total = 0
+                else:
+                    current = num_exposures_counter
+                    total = num_exposures
+                threads.invoke_in_main_thread(self._update_progress, current, total)
+
+                while self.getting_frame:
+                    time.sleep(.01)
+
             except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'An error occurred communicating with this device.')
@@ -152,25 +172,6 @@ class AreaDetectorController(ControllerPlugin):
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'Unknown error occurred when attempting to communicate with device.')
                 msg.logError(e)
-
-            num_exposures_counter = self.device.cam.num_exposures_counter.get()
-            num_exposures = self.device.cam.num_exposures.get()
-            num_captured = self.device.hdf5.num_captured.get()
-            num_capture = self.device.hdf5.num_capture.get()
-            capturing = self.device.hdf5.capture.get()
-            if capturing:
-                current = num_exposures_counter + num_captured * num_exposures
-                total = num_exposures * num_capture
-            elif num_exposures == 1:  # Show 'busy' for just one exposure
-                current = 0
-                total = 0
-            else:
-                current = num_exposures_counter
-                total = num_exposures
-            threads.invoke_in_main_thread(self._update_progress, current, total)
-
-            while self.getting_frame:
-                time.sleep(.01)
 
             t = time.time()
             max_period = 1 / self.maxfps
