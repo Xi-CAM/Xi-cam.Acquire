@@ -1,11 +1,12 @@
 import numpy as np
+from PyQt5.QtWidgets import QLabel
 from bluesky.plans import count
 import bluesky.plan_stubs as bps
 from databroker import Broker
 from databroker.core import BlueskyRun
 from happi import from_container
 from ophyd import Device
-from pydm.widgets import PyDMPushButton, PyDMLabel
+from pydm.widgets import PyDMPushButton, PyDMLabel, PyDMCheckbox
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
@@ -34,6 +35,9 @@ class FastCCDController(AreaDetectorController):
                            label='Initialize'))
         camera_layout.addWidget(
             PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.shutdown.setpoint_pvname}', label='Shutdown'))
+        auto_start = PyDMCheckbox(init_channel=f'ca://{device.cam.auto_start.setpoint_pvname}')
+        auto_start.setText('Auto Start')
+        camera_layout.addWidget(auto_start)
 
         dg_layout = QHBoxLayout()
         dg_panel = QGroupBox('Delay Gen State')

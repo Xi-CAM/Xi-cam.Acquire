@@ -325,6 +325,7 @@ class FCCDCam(AreaDetectorCam):
 
     initialize = ADCpt(EpicsSignal, 'Initialize')
     shutdown = ADCpt(EpicsSignal, "Shutdown")
+    auto_start = ADCpt(EpicsSignal, "AutoStart")
     state = ADCpt(EpicsSignalRO, "State")
 
     error_status = ADCpt(EpicsSignalRO, "ErrorStatus")
@@ -357,7 +358,7 @@ class ProductionCamBase(DetectorBase):
     # roi2 = Cpt(ROIPlugin, 'ROI2:')
     # roi3 = Cpt(ROIPlugin, 'ROI3:')
     # roi4 = Cpt(ROIPlugin, 'ROI4:')
-    trans1 = Cpt(TransformPlugin, 'Trans1:')
+    # trans1 = Cpt(TransformPlugin, 'Trans1:')
     proc1 = Cpt(ProcessPlugin, 'Proc1:')
     over1 = Cpt(OverlayPlugin, 'Over1:')
     fccd1 = Cpt(FastCCDPlugin, 'FastCCD1:')
