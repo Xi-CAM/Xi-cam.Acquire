@@ -106,7 +106,7 @@ class QRunEngine(QObject):
                 self.RE(*args, **kwargs)
             except RunEngineInterrupted:
                 msg.showMessage("Run has been aborted by the user.")
-            except RuntimeError as ex:
+            except Exception as ex:
                 msg.showMessage("An error occured during a Bluesky plan. See the Xi-CAM log for details.")
                 msg.logError(ex)
                 self.sigException.emit(ex)
@@ -144,12 +144,12 @@ class QRunEngine(QObject):
 
     def put(self, *args, priority=1, **kwargs):
         # handle ParameterizedPlan's
-        # plan = args[0]
-        # if isinstance(args[0], ParameterizedPlan):
-        #     # Ask for parameters
-        #     param = plan.parameter
-        #     if param:
-        #         ParameterDialog(param).exec_()
+        plan = args[0]
+        if hasattr(args[0], 'parameter'):
+            # Ask for parameters
+            param = plan.parameter
+            if param:
+                ParameterDialog(param).exec_()
 
         reserved = set(kwargs.keys()).union(['plan_type', 'plan_args', 'scan_id', 'time', 'uid'])
         self._metadata_dialog = MetadataDialog(reserved=reserved)

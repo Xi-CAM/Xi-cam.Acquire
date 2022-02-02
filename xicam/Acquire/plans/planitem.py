@@ -1,7 +1,7 @@
 from appdirs import user_cache_dir
 import importlib.util
 import os
-from ..runengine import RE
+from .. import runengine
 
 
 class PlanItem(object):
@@ -31,4 +31,4 @@ class PlanItem(object):
         return PlanItem, (self.name, self.icon, self.params, self.code)
 
     def run(self, callback=None):
-        RE(self.plan, callback)
+        runengine.RE(self.plan, callback)
