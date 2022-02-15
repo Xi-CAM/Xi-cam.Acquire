@@ -9,7 +9,7 @@ from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStorePluginBase, \
     FileStoreIterativeWrite, FileStoreHDF5, FileStoreBase
-from ophyd.areadetector.plugins import ProcessPlugin
+from ophyd.areadetector.plugins import ProcessPlugin, TransformPlugin_V34
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
 import time as ttime
@@ -358,7 +358,7 @@ class ProductionCamBase(DetectorBase):
     # roi2 = Cpt(ROIPlugin, 'ROI2:')
     # roi3 = Cpt(ROIPlugin, 'ROI3:')
     # roi4 = Cpt(ROIPlugin, 'ROI4:')
-    # trans1 = Cpt(TransformPlugin, 'Trans1:')
+    trans1 = Cpt(TransformPlugin_V34, 'Trans1:')
     proc1 = Cpt(ProcessPlugin, 'Proc1:')
     over1 = Cpt(OverlayPlugin, 'Over1:')
     fccd1 = Cpt(FastCCDPlugin, 'FastCCD1:')
