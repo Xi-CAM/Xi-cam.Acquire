@@ -9,7 +9,7 @@ from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector.detectors import DetectorBase
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStorePluginBase, \
     FileStoreIterativeWrite, FileStoreHDF5, FileStoreBase
-from ophyd.areadetector.plugins import ProcessPlugin
+from ophyd.areadetector.plugins import ProcessPlugin, TransformPlugin_V34
 from ophyd.device import FormattedComponent as FCpt
 from ophyd import AreaDetector
 import time as ttime
@@ -216,15 +216,17 @@ class HDF5PluginSWMR(PutCompleteCapture, HDF5Plugin):
 
         original_vals = {sig: sig.get() for sig in sigs}
 
-        for sig, val in sigs.items():
-            ttime.sleep(0.1)  # abundance of caution
-            set_and_wait(sig, val)
+        try:
+            for sig, val in sigs.items():
+                ttime.sleep(0.1)  # abundance of caution
+                set_and_wait(sig, val)
 
-        ttime.sleep(2)  # wait for acquisition
+        finally:
+            ttime.sleep(2)  # wait for acquisition
 
-        for sig, val in reversed(list(original_vals.items())):
-            ttime.sleep(0.1)
-            set_and_wait(sig, val)
+            for sig, val in reversed(list(original_vals.items())):
+                ttime.sleep(0.1)
+                set_and_wait(sig, val)
 
 
 class AdjustedFileStorePluginBase(FileStorePluginBase):
@@ -323,6 +325,7 @@ class FCCDCam(AreaDetectorCam):
 
     initialize = ADCpt(EpicsSignal, 'Initialize')
     shutdown = ADCpt(EpicsSignal, "Shutdown")
+    auto_start = ADCpt(EpicsSignal, "AutoStart")
     state = ADCpt(EpicsSignalRO, "State")
 
     error_status = ADCpt(EpicsSignalRO, "ErrorStatus")
@@ -355,7 +358,7 @@ class ProductionCamBase(DetectorBase):
     # roi2 = Cpt(ROIPlugin, 'ROI2:')
     # roi3 = Cpt(ROIPlugin, 'ROI3:')
     # roi4 = Cpt(ROIPlugin, 'ROI4:')
-    trans1 = Cpt(TransformPlugin, 'Trans1:')
+    trans1 = Cpt(TransformPlugin_V34, 'Trans1:')
     proc1 = Cpt(ProcessPlugin, 'Proc1:')
     over1 = Cpt(OverlayPlugin, 'Over1:')
     fccd1 = Cpt(FastCCDPlugin, 'FastCCD1:')
@@ -389,8 +392,8 @@ class ProductionCamBase(DetectorBase):
 class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
-               write_path_template='/data/fccd_data/%Y/%m/%d/',
-               root='/data/',
+               write_path_template='/remote-data/fccd_data/%Y/%m/%d/',
+               root='/remote-data/',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
 
     def stop(self):

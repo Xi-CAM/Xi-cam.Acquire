@@ -106,7 +106,8 @@ setup(
         'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
         'fastccd_controller = xicam.Acquire.controllers.fastccd_controller:FastCCDController',
         'typhos = xicam.Acquire.controllers.typhoscontroller:TyphosController',
-        'diodecontroller = xicam.Acquire.controllers.diodecontroller:DiodeController'],
+        'diodecontroller = xicam.Acquire.controllers.diodecontroller:DiodeController',
+        'psu = xicam.Acquire.controllers.psu:PSUController'],
         'xicam.plugins.DataResourcePlugin': [
             'bluesky = xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin',
             'ophyd = xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin'],

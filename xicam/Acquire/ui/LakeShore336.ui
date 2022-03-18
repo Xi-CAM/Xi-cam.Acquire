@@ -95,8 +95,18 @@
      </property>
      <property name="curves">
       <stringlist>
-       <string>{&quot;channel&quot;: &quot;ca://${prefix}TemperatureKelvin&quot;, &quot;name&quot;: &quot;Temp [K]&quot;, &quot;color&quot;: &quot;#fc0052&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 3, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
-       <string>{&quot;channel&quot;: &quot;ca://${prefix}HeaterOutput&quot;, &quot;name&quot;: &quot;Heater [%]&quot;, &quot;color&quot;: &quot;#1ea7ff&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 3, &quot;symbol&quot;: null, &quot;symbolSize&quot;: 10}</string>
+       <string>{&quot;channel&quot;: &quot;ca://${prefix}TemperatureKelvinA&quot;, &quot;name&quot;: &quot;A Temp [K]&quot;,
+        &quot;color&quot;: &quot;#fc0052&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 3, &quot;symbol&quot;:
+        null, &quot;symbolSize&quot;: 10}
+       </string>
+       <string>{&quot;channel&quot;: &quot;ca://${prefix}TemperatureKelvinB&quot;, &quot;name&quot;: &quot;B Temp [K]&quot;,
+        &quot;color&quot;: &quot;#00ff00&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 3, &quot;symbol&quot;:
+        null, &quot;symbolSize&quot;: 10}
+       </string>
+       <string>{&quot;channel&quot;: &quot;ca://${prefix}HeaterOutputA&quot;, &quot;name&quot;: &quot;Heater [%]&quot;,
+        &quot;color&quot;: &quot;#1ea7ff&quot;, &quot;lineStyle&quot;: 1, &quot;lineWidth&quot;: 3, &quot;symbol&quot;:
+        null, &quot;symbolSize&quot;: 10}
+       </string>
       </stringlist>
      </property>
      <property name="timeSpan">

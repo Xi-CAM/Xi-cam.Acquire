@@ -82,12 +82,19 @@ class AreaDetectorController(ControllerPlugin):
         config_panel = QGroupBox('Configuration')
         config_panel.setLayout(config_layout)
 
+        # Create the Acquire panel and its buttons
         acquire_layout = QVBoxLayout()
         acquire_button = QPushButton('Acquire')
         self.acquire_progress = QProgressBar()
         acquire_button.clicked.connect(self.acquire)
         acquire_layout.addWidget(acquire_button)
         acquire_layout.addWidget(self.acquire_progress)
+
+        self.abort_button = QPushButton('Abort')
+        self.abort_button.clicked.connect(self.abort)
+        self._ready()  # prepare the appropriate abort btn check state and styling
+
+        acquire_layout.addWidget(self.abort_button)
 
         acquire_panel = QGroupBox('Acquire')
         acquire_panel.setLayout(acquire_layout)
@@ -97,6 +104,10 @@ class AreaDetectorController(ControllerPlugin):
         self.hlayout.addWidget(config_panel)
         self.hlayout.addWidget(acquire_panel)
         self.layout().addLayout(self.hlayout)
+
+        # Connect relevant RE signals to update abort btn check state and styling depending on the RE state
+        self.RE.sigStart.connect(self._started)
+        self.RE.sigReady.connect(self._ready)
 
         # WIP
         # self.lutCheck = QCheckBox()
@@ -133,6 +144,26 @@ class AreaDetectorController(ControllerPlugin):
                         self.device.wait_for_connection()
 
                 update_action()
+
+                num_exposures_counter = self.device.cam.num_exposures_counter.get()
+                num_exposures = self.device.cam.num_exposures.get()
+                num_captured = self.device.hdf5.num_captured.get()
+                num_capture = self.device.hdf5.num_capture.get()
+                capturing = self.device.hdf5.capture.get()
+                if capturing:
+                    current = num_exposures_counter + num_captured * num_exposures
+                    total = num_exposures * num_capture
+                elif num_exposures == 1:  # Show 'busy' for just one exposure
+                    current = 0
+                    total = 0
+                else:
+                    current = num_exposures_counter
+                    total = num_exposures
+                threads.invoke_in_main_thread(self._update_progress, current, total)
+
+                while self.getting_frame:
+                    time.sleep(.01)
+
             except (RuntimeError, CaprotoTimeoutError, ConnectionTimeoutError, TimeoutError) as ex:
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'An error occurred communicating with this device.')
@@ -141,25 +172,6 @@ class AreaDetectorController(ControllerPlugin):
                 threads.invoke_in_main_thread(self.error_text.setText,
                                               'Unknown error occurred when attempting to communicate with device.')
                 msg.logError(e)
-
-            num_exposures_counter = self.device.cam.num_exposures_counter.get()
-            num_exposures = self.device.cam.num_exposures.get()
-            num_captured = self.device.hdf5.num_captured.get()
-            num_capture = self.device.hdf5.num_capture.get()
-            capturing = self.device.hdf5.capture.get()
-            if capturing:
-                current = num_exposures_counter + num_captured * num_exposures
-                total = num_exposures * num_capture
-            elif num_exposures == 1:  # Show 'busy' for just one exposure
-                current = 0
-                total = 0
-            else:
-                current = num_exposures_counter
-                total = num_exposures
-            threads.invoke_in_main_thread(self._update_progress, current, total)
-
-            while self.getting_frame:
-                time.sleep(.01)
 
             t = time.time()
             max_period = 1 / self.maxfps
@@ -231,3 +243,14 @@ class AreaDetectorController(ControllerPlugin):
 
     def acquire(self):
         self.RE(count(self.coupled_devices), **self.metadata)
+
+    def abort(self):
+        self.RE.abort('Acquisition aborted by Xi-cam user.')
+
+    def _started(self):
+        self.abort_button.setEnabled(True)
+        self.abort_button.setStyleSheet('background-color:red;color:white;font-weight:bold;')
+
+    def _ready(self):
+        self.abort_button.setEnabled(False)
+        self.abort_button.setStyleSheet('')
