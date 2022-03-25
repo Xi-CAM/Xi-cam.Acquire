@@ -67,6 +67,10 @@ class PSUController(ControllerPlugin):
                               name="Bias/Clocks Out3 Voltage", color="blue", lineWidth=3)
         time_plot.addYChannel(y_channel=f'ca://{device.bias_clocks_psu.channel2.current.pvname}',
                               name="Bias/Clocks Out3 Current", color="blue", lineStyle=Qt.DashLine, lineWidth=3)
+        time_plot.addYChannel(y_channel=f'ca://{device.bias_clocks_psu.channel3.voltage.pvname}',
+                              name="Bias/Clocks Out4 Voltage", color="purple", lineWidth=3)
+        time_plot.addYChannel(y_channel=f'ca://{device.bias_clocks_psu.channel3.current.pvname}',
+                              name="Bias/Clocks Out4 Current", color="purple", lineStyle=Qt.DashLine, lineWidth=3)
         time_plot.addYChannel(y_channel=f'ca://{device.fcric_fops_psu.channel0.voltage.pvname}',
                               name="FCRIC/FOPS Out1 Voltage", color="orange", lineWidth=3)
         time_plot.addYChannel(y_channel=f'ca://{device.fcric_fops_psu.channel0.current.pvname}',
