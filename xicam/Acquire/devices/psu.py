@@ -12,6 +12,7 @@ class BiasClocksPSU(Device):
     channel0 = Cpt(PSUChannel, 'Out1:')
     channel1 = Cpt(PSUChannel, 'Out2:')
     channel2 = Cpt(PSUChannel, 'Out3:')
+    channel3 = Cpt(PSUChannel, 'Out4:')
 
 
 class FCRICFOPSPSU(Device):
