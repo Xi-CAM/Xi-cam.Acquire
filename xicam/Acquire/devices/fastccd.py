@@ -330,6 +330,10 @@ class FCCDCam(AreaDetectorCam):
 
     error_status = ADCpt(EpicsSignalRO, "ErrorStatus")
 
+    bias_state = ADCpt(EpicsSignal, "BiasState")
+    bias_on = ADCpt(EpicsSignal, "BiasOn")
+    bias_off = ADCpt(EpicsSignal, "BiasOff")
+
     def __init__(self, *args, temp_pv=None, **kwargs):
         self._temp_pv = temp_pv
         super().__init__(*args, **kwargs)
