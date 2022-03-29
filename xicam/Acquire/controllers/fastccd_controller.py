@@ -39,6 +39,18 @@ class FastCCDController(AreaDetectorController):
         auto_start.setText('Auto Start')
         camera_layout.addWidget(auto_start)
 
+        bias_layout = QVBoxLayout()
+        bias_panel = QGroupBox('BIAS State')
+        bias_panel.setLayout(bias_layout)
+
+        bias_layout.addWidget(PyDMLabel(init_channel=f'ca://{device.cam.bias_state.pvname}'))
+        bias_layout.addWidget(
+            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.bias_on.pvname}', label='Power On')
+        )
+        bias_layout.addWidget(
+            PyDMPushButton(pressValue=1, init_channel=f'ca://{device.cam.bias_off.pvname}', label='Power Off')
+        )
+
         dg_layout = QHBoxLayout()
         dg_panel = QGroupBox('Delay Gen State')
         dg_panel.setLayout(dg_layout)
@@ -70,6 +82,7 @@ class FastCCDController(AreaDetectorController):
         )
 
         self.hlayout.addWidget(camera_panel)
+        self.hlayout.addWidget(bias_panel)
         self.hlayout.addWidget(dg_panel)
         self.passive.setVisible(False)  # active mode is useless for fastccd at COSMIC-Scattering
 
