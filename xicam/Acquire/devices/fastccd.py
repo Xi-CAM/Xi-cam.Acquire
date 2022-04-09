@@ -282,13 +282,6 @@ class HDF5PluginWithFileStore(HDF5PluginSWMR, AdjustedFileStoreHDF5IterativeWrit
     # AD v2.2.0 (at least) does not have this. It is present in v1.9.1.
     file_number_sync = None
 
-    # file_number = Cpt(SignalWithRBV, 'AdjustedFileNumber')
-
-    def __init__(self, *args, **kwargs):
-        super(HDF5PluginWithFileStore, self).__init__(*args, **kwargs)
-        self.stage_sigs.pop('capture', None)
-        self.stage_sigs.pop(self.capture, None)
-
     def get_frames_per_point(self):
         return self.num_capture.get()
 
