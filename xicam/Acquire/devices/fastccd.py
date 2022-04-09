@@ -249,7 +249,7 @@ class AdjustedFileStorePluginBase(FileStorePluginBase):
         self._fn = self.file_template.get() % (read_path,
                                                filename,
                                                # file_number is *next* iteration
-                                               self.file_number.get())
+                                               self.file_number.get() - 1)
         self._fp = read_path
         if not self.file_path_exists.get():
             raise IOError("Path %s does not exist on IOC."
@@ -267,11 +267,6 @@ class AdjustedFileStoreHDF5(AdjustedFileStorePluginBase):
 
     def get_frames_per_point(self):
         return self.num_capture.get()
-
-    def stage(self):
-        super().stage()
-        res_kwargs = {'frame_per_point': self.get_frames_per_point()}
-        self._generate_resource(res_kwargs)
 
 
 class AdjustedFileStoreHDF5IterativeWrite(AdjustedFileStoreHDF5, FileStoreIterativeWrite):
@@ -430,6 +425,18 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
         self.hdf5._generate_resource(res_kwargs)
 
         return super().resume()
+
+    def trigger(self):
+        self.hdf5._point_counter = itertools.count()
+        # grab the stashed result from make_filename
+        filename, read_path, write_path = self.hdf5._ret
+        self.hdf5._fn = self.hdf5.file_template.get() % (read_path,
+                                                         filename,
+                                                         self.hdf5.file_number.get() - 1)
+
+        res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
+        self.hdf5._generate_resource(res_kwargs)
+        return super(ProductionCamStandard, self).trigger()
 
 
 class DelayGenerator(Device):
