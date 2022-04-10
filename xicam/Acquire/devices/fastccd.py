@@ -425,7 +425,7 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
         filename, read_path, write_path = self.hdf5._ret
         self.hdf5._fn = self.hdf5.file_template.get() % (read_path,
                                                          filename,
-                                                         self.hdf5.file_number.get() - 1)
+                                                         self.hdf5.file_number.get())
 
         res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
         self.hdf5._generate_resource(res_kwargs)
