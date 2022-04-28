@@ -77,10 +77,9 @@ class AreaDetectorController(ControllerPlugin):
         # Create the Acquire panel and its buttons
         acquire_layout = QVBoxLayout()
         acquire_button = QPushButton('Acquire')
-        self.acquire_progress = QProgressBar()
+
         acquire_button.clicked.connect(self.acquire)
         acquire_layout.addWidget(acquire_button)
-        acquire_layout.addWidget(self.acquire_progress)
 
         self.abort_button = QPushButton('Abort')
         self.abort_button.clicked.connect(self.abort)
