@@ -93,6 +93,10 @@ class QRunEngine(QObject):
 
     @threads.method(threadkey="run_engine", showBusy=False)
     def process_queue(self):
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
         while True:
             try:
                 priority_plan = self.queue.get(block=True, timeout=.1)  # timeout is arbitrary, we'll come right back

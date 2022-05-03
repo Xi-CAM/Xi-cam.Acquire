@@ -169,7 +169,7 @@ class FastCCDController(AreaDetectorController):
                 pass
         else:
             image = image.astype(np.uint16) & 0x1FFF
-        image = np.delete(image, slice(966, 1084), 1)
+#        image = np.delete(image, slice(966, 1084), 1)
         return image
 
     def _plan(self):
