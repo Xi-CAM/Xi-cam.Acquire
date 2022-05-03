@@ -71,7 +71,6 @@ class FastCCDController(AreaDetectorController):
 
         self.hlayout.addWidget(camera_panel)
         self.hlayout.addWidget(dg_panel)
-        self.passive.setVisible(False)  # active mode is useless for fastccd at COSMIC-Scattering
 
         # Subscribe to the error status PV so we can create notifications
         # (only relevant for cam init errors for now)
