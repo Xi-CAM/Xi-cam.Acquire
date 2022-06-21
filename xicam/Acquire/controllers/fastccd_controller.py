@@ -1,12 +1,12 @@
 import numpy as np
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QCheckBox
 from bluesky.plans import count
 import bluesky.plan_stubs as bps
 from databroker import Broker
 from databroker.core import BlueskyRun
 from happi import from_container
 from ophyd import Device
-from pydm.widgets import PyDMPushButton, PyDMLabel, PyDMCheckbox
+from pydm.widgets import PyDMPushButton, PyDMLabel, PyDMCheckbox, PyDMLineEdit
 from qtpy.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout
 from .areadetector import AreaDetectorController
 from xicam.plugins import manager as plugin_manager
@@ -21,8 +21,19 @@ dark_exposures = 1
 
 
 class FastCCDController(AreaDetectorController):
+    view_kwargs = {'allow_active': False}
+
     def __init__(self, device: Device):
         super(FastCCDController, self).__init__(device)
+
+        self.noise_correction = QCheckBox('Noise Correction')
+        self.layout().addWidget(self.noise_correction)
+
+        self.config_layout.removeRow(3)  # Remove ImageMode
+        self.config_layout.removeRow(2)  # Remove HDF5 enable
+
+        self.config_layout.insertRow(2, 'Number of Images',
+                              PyDMLineEdit(init_channel=f'ca://{device.hdf5.num_capture.setpoint_pvname}'))
 
         camera_layout = QVBoxLayout()
         camera_panel = QGroupBox('Camera State')
@@ -91,14 +102,14 @@ class FastCCDController(AreaDetectorController):
 
         self.async_poll_devices = list(map(from_device_container,
                                            happi_settings.search(source='labview')))
-        self.async_poll_devices += map(from_device_container,
-                                       happi_settings.search(
-                                           prefix=device.prefix))
+        # self.async_poll_devices += map(from_device_container,
+        #                                happi_settings.search(
+        #                                    prefix=device.prefix))
 
         # Remove errored from_container devices (Nones)
         self.async_poll_devices = list(filter(lambda device: device, self.async_poll_devices))
 
-        self.async_poll_devices.remove(device)
+        # self.async_poll_devices.remove(device)
 
         self.metadata["projections"] = [{'name': 'NXsas',
                                          'version': '0.1.0',
@@ -169,6 +180,8 @@ class FastCCDController(AreaDetectorController):
         else:
             image = image.astype(np.uint16) & 0x1FFF
 #        image = np.delete(image, slice(966, 1084), 1)
+        if self.noise_correction.isChecked():
+            image -= np.tile(image[:10], (96, 1))
         return image
 
     def _plan(self):

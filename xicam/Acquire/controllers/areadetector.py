@@ -1,32 +1,19 @@
-import numpy as np
-import pyqtgraph as pg
-import pyqtgraph.ptime as ptime
-from PyQt5.QtWidgets import QProgressBar
-from pyqtgraph import GradientWidget
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QCheckBox, QGroupBox, QFormLayout, QHBoxLayout, QPushButton
-from qtpy.QtCore import QTimer
-from xicam.core import threads
-from xicam.plugins import ControllerPlugin
-from functools import partial
+from bluesky.plans import count
+from happi import from_container
+from ophyd import Device
+from pydm.widgets.checkbox import PyDMCheckbox
+from pydm.widgets.enum_combo_box import PyDMEnumComboBox
+from pydm.widgets.line_edit import PyDMLineEdit
+from qtpy.QtWidgets import QVBoxLayout, QCheckBox, QGroupBox, QFormLayout, QHBoxLayout, QPushButton
 from xicam.core import msg
 from xicam.gui.widgets.dynimageview import DynImageView
 from xicam.gui.widgets.imageviewmixins import PixelCoordinates, Crosshair, BetterButtons, LogScaleIntensity, \
     ImageViewHistogramOverflowFix, AreaDetectorROI
-from caproto._utils import CaprotoTimeoutError
-from ophyd.signal import ConnectionTimeoutError
-from pydm.widgets.line_edit import PyDMLineEdit
-from pydm.widgets.enum_combo_box import PyDMEnumComboBox
-from pydm.widgets.pushbutton import PyDMPushButton
-from bluesky.plans import count
-import ophyd
-from xicam.Acquire.runengine import RE
-from timeit import default_timer
-from contextlib import contextmanager
+from xicam.plugins import ControllerPlugin
+from xicam.plugins import manager as plugin_manager
+
 # from xicam.SAXS.processing.correction import CorrectFastCCDImage
 from xicam.Acquire.runengine import get_run_engine
-import time
-
-from typing import Callable
 
 
 class ADImageView(AreaDetectorROI,
@@ -41,6 +28,7 @@ class ADImageView(AreaDetectorROI,
 
 class AreaDetectorController(ControllerPlugin):
     viewclass = ADImageView
+    view_kwargs = dict()
 
     def __init__(self, device, preprocess_enabled=True, maxfps=4):  # Note: typical query+processing+display <.2s
         super(AreaDetectorController, self).__init__(device)
@@ -49,30 +37,33 @@ class AreaDetectorController(ControllerPlugin):
 
         self.setLayout(QVBoxLayout())
 
-        self.coupled_devices = []
+        self.coupled_devices = [device]
 
         self.bg_correction = QCheckBox("Background Correction")
         self.bg_correction.setChecked(True)
 
-        self.imageview = self.viewclass(device=device, preprocess=self.preprocess)
+        self.imageview = self.viewclass(device=device, preprocess=self.preprocess, **self.view_kwargs)
         self.layout().addWidget(self.imageview)
         self.layout().addWidget(self.bg_correction)
         self.metadata = {}
 
-        config_layout = QFormLayout()
-        config_layout.addRow('Acquire Time',
-                             PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
-        config_layout.addRow('Acquire Period',
-                             PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
-        config_layout.addRow('Number of Images',
-                             PyDMLineEdit(init_channel=f'ca://{device.hdf5.num_capture.setpoint_pvname}'))
-        config_layout.addRow('Number of Exposures',
-                             PyDMLineEdit(init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}'))
+        self.config_layout = QFormLayout()
+        self.config_layout.addRow('Acquire Time',
+                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        self.config_layout.addRow('Acquire Period',
+                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
+        self.config_layout.addRow('Image Mode',
+                                  PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
+        if hasattr(device, 'hdf5'):
+            self.config_layout.addRow('Save Enabled',
+                                      PyDMCheckbox(init_channel=f'ca://{device.hdf5.enable.setpoint_pvname}'))
+        self.config_layout.addRow('Number of Exposures',
+                                  PyDMLineEdit(init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}'))
         # config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
         # config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.trigger_mode.setpoint_pvname}'))
 
         config_panel = QGroupBox('Configuration')
-        config_panel.setLayout(config_layout)
+        config_panel.setLayout(self.config_layout)
 
         # Create the Acquire panel and its buttons
         acquire_layout = QVBoxLayout()
@@ -130,3 +121,29 @@ class AreaDetectorController(ControllerPlugin):
     def _ready(self):
         self.abort_button.setEnabled(False)
         self.abort_button.setStyleSheet('')
+
+
+class LabViewCoupledController(AreaDetectorController):
+    def __init__(self, device, *args, **kwargs):
+        super(LabViewCoupledController, self).__init__(device, *args, **kwargs)
+
+        # Find coupled devices and add them so they'll be used with RE
+        def from_device_container(container) -> Device:
+            try:
+                return from_container(container.device)
+            except Exception as e:
+                msg.logError(e)
+                return None
+
+        happi_settings = plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin")
+
+        coupled_devices = list(map(from_device_container,
+                                   happi_settings.search(source='labview')))
+        # coupled_devices += map(from_device_container,
+        #                                happi_settings.search(
+        #                                    prefix=device.prefix))
+
+        # Remove errored from_container devices (Nones)
+        coupled_devices = list(filter(lambda device: device, coupled_devices))
+
+        self.coupled_devices = coupled_devices
