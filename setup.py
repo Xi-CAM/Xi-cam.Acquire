@@ -104,6 +104,7 @@ setup(
     entry_points={'xicam.plugins.ControllerPlugin': [
         'areadetector = xicam.Acquire.controllers.areadetector:AreaDetectorController',
         'saxsdetector = xicam.Acquire.controllers.saxsdetector:SAXSDetectorController',
+        'labview_coupled_controller = xicam.Acquire.controllers.areadetector:LabViewCoupledController',
         'fastccd_controller = xicam.Acquire.controllers.fastccd_controller:FastCCDController',
         'typhos = xicam.Acquire.controllers.typhoscontroller:TyphosController',
         'diodecontroller = xicam.Acquire.controllers.diodecontroller:DiodeController',
