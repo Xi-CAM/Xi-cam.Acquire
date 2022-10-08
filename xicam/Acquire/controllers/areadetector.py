@@ -49,9 +49,9 @@ class AreaDetectorController(ControllerPlugin):
 
         self.config_layout = QFormLayout()
         self.config_layout.addRow('Acquire Time',
-                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.pvname}'))
         self.config_layout.addRow('Acquire Period',
-                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
+                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.pvname}'))
         self.config_layout.addRow('Image Mode',
                                   PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
         if hasattr(device, 'hdf5'):

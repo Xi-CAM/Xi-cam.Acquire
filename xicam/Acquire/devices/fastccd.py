@@ -33,7 +33,7 @@ class IndirectTrigger(SingleTrigger):
         super(IndirectTrigger, self).__init__(*args, **kwargs)
 
         # Force continuous mode when staging
-        self.stage_sigs.update([(self.cam.image_mode, 2)])
+        # self.stage_sigs.update([(self.cam.image_mode, 2)])
 
 
 # compare with stats_plugin.py in
@@ -181,7 +181,7 @@ class StatsPluginCSX(PluginBase):
 class PutCompleteCapture(FilePlugin):
     def __init__(self, *args, **kwargs):
         super(PutCompleteCapture, self).__init__(*args, **kwargs)
-        self.capture.put_complete = True
+        # self.capture.put_complete = True
 
 
 class HDF5PluginSWMR(PutCompleteCapture, HDF5Plugin):
@@ -197,7 +197,7 @@ class HDF5PluginSWMR(PutCompleteCapture, HDF5Plugin):
         super().__init__(*args, **kwargs)
         self.stage_sigs['swmr_mode'] = 1
         # Prevent overwriting num_capture on stage
-        del self.stage_sigs['num_capture']
+        # del self.stage_sigs['num_capture']
 
     # TODO: check if this can be removed now
     def warmup(self):
@@ -229,40 +229,40 @@ class HDF5PluginSWMR(PutCompleteCapture, HDF5Plugin):
                 set_and_wait(sig, val)
 
 
-class AdjustedFileStorePluginBase(FileStorePluginBase):
-    def stage(self):
-        # Make a filename.
-        filename, read_path, write_path = self.make_filename()
+# class AdjustedFileStorePluginBase(FileStorePluginBase):
+#     def stage(self):
+#         # Make a filename.
+#         filename, read_path, write_path = self.make_filename()
+#
+#         # Ensure we do not have an old file open.
+#         # if self.file_write_mode != 'Single':
+#         #     set_and_wait(self.capture, 0)
+#         # These must be set before parent is staged (specifically
+#         # before capture mode is turned on. They will not be reset
+#         # on 'unstage' anyway.
+#         self.file_path.set(write_path).wait()
+#         set_and_wait(self.file_name, filename)
+#         FileStoreBase.stage(self)
+#
+#         # AD does this same templating in C, but we can't access it
+#         # so we do it redundantly here in Python.
+#         self._fn = self.file_template.get() % (read_path,
+#                                                filename,
+#                                                # file_number is *next* iteration
+#                                                self.file_number.get() - 1)
+#         self._fp = read_path
+#         if not self.file_path_exists.get():
+#             raise IOError("Path %s does not exist on IOC."
+#                           "" % self.file_path.get())
 
-        # Ensure we do not have an old file open.
-        if self.file_write_mode != 'Single':
-            set_and_wait(self.capture, 0)
-        # These must be set before parent is staged (specifically
-        # before capture mode is turned on. They will not be reset
-        # on 'unstage' anyway.
-        self.file_path.set(write_path).wait()
-        set_and_wait(self.file_name, filename)
-        FileStoreBase.stage(self)
 
-        # AD does this same templating in C, but we can't access it
-        # so we do it redundantly here in Python.
-        self._fn = self.file_template.get() % (read_path,
-                                               filename,
-                                               # file_number is *next* iteration
-                                               self.file_number.get() - 1)
-        self._fp = read_path
-        if not self.file_path_exists.get():
-            raise IOError("Path %s does not exist on IOC."
-                          "" % self.file_path.get())
-
-
-class AdjustedFileStoreHDF5(AdjustedFileStorePluginBase):
+class AdjustedFileStoreHDF5(FileStorePluginBase):
     def __init__(self, *args, **kwargs):
         super(AdjustedFileStoreHDF5, self).__init__(*args, **kwargs)
         self.filestore_spec = 'AD_HDF5'  # spec name stored in resource doc
         self.stage_sigs.update([('file_template', '%s%s_%6.6d.h5'),
                                 ('file_write_mode', 'Stream'),
-                                ('capture', 1)
+                                # ('capture', 1)                                      # TODO: I THINK THIS NEEDS TO BE REMOVED!
                                 ])
 
     def get_frames_per_point(self):
@@ -278,12 +278,12 @@ class AdjustedFileStoreHDF5IterativeWrite(AdjustedFileStoreHDF5, FileStoreIterat
         self._point_counter = itertools.count()
 
 
-class HDF5PluginWithFileStore(HDF5PluginSWMR, AdjustedFileStoreHDF5IterativeWrite):
+class HDF5PluginWithFileStore(HDF5PluginSWMR, FileStoreHDF5IterativeWrite):
     # AD v2.2.0 (at least) does not have this. It is present in v1.9.1.
     file_number_sync = None
 
     def get_frames_per_point(self):
-        return self.num_capture.get()
+        return self.parent.cam.num_images.get()
 
     def make_filename(self):
         # stash this so that it is available on resume
@@ -304,11 +304,10 @@ class FCCDCam(AreaDetectorCam):
     fcric_gain = Cpt(EpicsSignalWithRBV, 'FCRICGain')
     fcric_clamp = Cpt(EpicsSignalWithRBV, 'FCRICClamp')
 
-    readout_time = Cpt(EpicsSignal, 'ReadoutTime')
-
-    acquire_time = ADCpt(SignalWithRBV, 'AdjustedAcquireTime')
-    acquire_period = ADCpt(SignalWithRBV, 'AdjustedAcquirePeriod')
-    acquire = ADCpt(EpicsSignal, 'AdjustedAcquire')
+    acquire_time = ADCpt(EpicsSignal, 'adjusted_acquire_time')
+    acquire_period = ADCpt(EpicsSignal, 'adjusted_acquire_period')
+    num_images = ADCpt(EpicsSignal, 'adjusted_num_images')
+    acquire = ADCpt(EpicsSignal, 'adjusted_acquire')
     acquire_raw = ADCpt(EpicsSignal, 'Acquire')
 
     initialize = ADCpt(EpicsSignal, 'Initialize')
@@ -353,12 +352,6 @@ class ProductionCamBase(DetectorBase):
     fccd1 = Cpt(FastCCDPlugin, 'FastCCD1:')
     image1 = Cpt(ImagePlugin, 'image1:')
 
-    # This does nothing, but it's the right place to add code to be run
-    # once at instantiation time.
-    def __init__(self, *arg, readout_time=0.04, **kwargs):
-        self.readout_time = readout_time
-        super().__init__(*arg, **kwargs)
-
     def pause(self):
         self.cam.acquire.put(0)
         super().pause()
@@ -381,8 +374,8 @@ class ProductionCamBase(DetectorBase):
 class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
     hdf5 = Cpt(HDF5PluginWithFileStore,
                suffix='HDF1:',
-               write_path_template='/remote-data/fccd_data/%Y/%m/%d/',
-               root='/remote-data/',
+               write_path_template='/data/fccd_data/%Y/%m/%d/',
+               root='/data/',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
 
     def stop(self):
@@ -401,7 +394,7 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
 
         return super().pause()
 
-    def resume(self):
+    def resume(self):  # TODO: REDO THIS!
         set_val = 1
         set_and_wait(self.hdf5.capture, set_val)  # use acquire pv here rather than disable capture
         self.hdf5._point_counter = itertools.count()
@@ -421,15 +414,15 @@ class ProductionCamStandard(IndirectTrigger, ProductionCamBase):
         return super().resume()
 
     def trigger(self):
-        self.hdf5._point_counter = itertools.count()
+        # self.hdf5._point_counter = itertools.count()
         # grab the stashed result from make_filename
-        filename, read_path, write_path = self.hdf5._ret
-        self.hdf5._fn = self.hdf5.file_template.get() % (read_path,
-                                                         filename,
-                                                         self.hdf5.file_number.get())
+        # filename, read_path, write_path = self.hdf5._ret
+        # self.hdf5._fn = self.hdf5.file_template.get() % (read_path,
+        #                                                  filename,
+        #                                                  self.hdf5.file_number.get())
 
-        res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
-        self.hdf5._generate_resource(res_kwargs)
+        # res_kwargs = {'frame_per_point': self.hdf5.get_frames_per_point()}
+        # self.hdf5._generate_resource(res_kwargs)
         return super(ProductionCamStandard, self).trigger()
 
 
@@ -445,12 +438,21 @@ class DelayGenerator(Device):
     shutter_close_delay = Cpt(EpicsSignal, 'ShutterCloseDelay')
 
 
-class ProductionCamTriggered(ProductionCamStandard):
-    dg1 = FCpt(DelayGenerator, '{self._dg1_prefix}')
+class BK4050(Device):
+    shutter_enabled = ADCpt(EpicsSignal, 'shutter_enabled')
 
-    # TODO: populate dg1_prefix using happi rather than hard coded value
-    def __init__(self, *args, dg1_prefix=None, **kwargs):
-        self._dg1_prefix = "ES7011:ShutterDelayGenerator:"
+
+class Shutter(Device):
+    shutter_enabled = Cpt(EpicsSignal, 'shutter_enabled')
+
+
+class ProductionCamTriggered(ProductionCamStandard):
+    # bk4050 = FCpt(BK4050, '{self._bk4050_prefix}')
+    shutter = Cpt(Shutter, 'shutter:')
+
+    # TODO: populate bk4050_prefix using happi rather than hard coded value
+    def __init__(self, *args, bk4050_prefix=None, **kwargs):
+        self._bk4050_prefix = "ES7011:FastCCD:shutter:"
         super().__init__(*args, **kwargs)
 
 
