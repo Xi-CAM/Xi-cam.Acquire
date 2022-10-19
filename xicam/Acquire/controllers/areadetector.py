@@ -146,4 +146,4 @@ class LabViewCoupledController(AreaDetectorController):
         # Remove errored from_container devices (Nones)
         coupled_devices = list(filter(lambda device: device, coupled_devices))
 
-        self.coupled_devices = coupled_devices
+        self.coupled_devices += coupled_devices
