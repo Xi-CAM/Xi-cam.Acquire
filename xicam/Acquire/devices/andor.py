@@ -3,9 +3,10 @@ import time as ttime
 
 from ophyd.areadetector.detectors import AndorDetector
 from ophyd.areadetector.base import ADComponent as C, ADBase
-from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, set_and_wait
+from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, set_and_wait, AndorDetectorCam, EpicsSignalRO
 import numpy as np
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreHDF5, FileStoreIterativeWrite
+from ophyd.utils import RedundantStaging
 
 
 class NumCaptureOverrideFix(HDF5Plugin):
@@ -73,7 +74,12 @@ class StageOnFirstTrigger(ADBase):
         return super(StageOnFirstTrigger, self).trigger()
 
 
+class TempfixAndorDetectorCam(AndorDetectorCam):
+    andor_temp_status = C(EpicsSignalRO, 'AndorTempStatus_RBV', string=True)  # force string value
+
+
 class Andor(StageOnFirstTrigger, SingleTrigger, HDF5Warmup, AndorDetector):
+    cam = C(TempfixAndorDetectorCam, 'cam1:')
     image1 = C(ImagePlugin, 'image1:')
 
     def __init__(self, *args, **kwargs):
@@ -85,3 +91,9 @@ class Andor(StageOnFirstTrigger, SingleTrigger, HDF5Warmup, AndorDetector):
                write_path_template='/remote-data/andor_data/%Y/%m/%d/',
                root='/remote-data/',
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
+
+    def stage(self):
+        try:
+            super(Andor, self).stage()
+        except RedundantStaging:  # forgive redundant staging
+            pass
