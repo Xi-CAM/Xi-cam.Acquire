@@ -93,7 +93,6 @@ class Andor(StageOnFirstTrigger, SingleTrigger, HDF5Warmup, AndorDetector):
                reg=None)  # placeholder to be set on instance as obj.hdf5.reg
 
     def stage(self):
-        try:
-            super(Andor, self).stage()
-        except RedundantStaging:  # forgive redundant staging
-            pass
+        if self._staged == Staged.yes:
+            self.unstage()
+        super(Andor, self).stage()
