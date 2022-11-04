@@ -1,5 +1,8 @@
+import logging
+
 import numpy as np
-from PyQt5.QtWidgets import QLabel, QCheckBox
+from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QLabel, QCheckBox
 from bluesky.plans import count
 import bluesky.plan_stubs as bps
 from databroker import Broker
@@ -135,6 +138,20 @@ class FastCCDController(AreaDetectorController):
                                                            'poni2': 1025
                                                            }
                                          }]
+        
+        self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
+        self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
+        self.start_tv()
+
+    def start_tv(self):
+        logging.info('starting tv mode')
+        self.device.cam.image_mode.put(2)
+        self.device.cam.acquire.put(1)
+
+    def stop_tv(self):
+        logging.info('stopping tv mode')
+        self.device.cam.acquire.put(0)
+        self.device.cam.image_mode.put(1)
 
     # def preprocess(self, image):
     #
@@ -163,7 +180,15 @@ class FastCCDController(AreaDetectorController):
         if self.bg_correction.isChecked():
             try:
                 flats = np.ones_like(image)
-                darks = self.get_dark(Broker.named('local').v2[-1])
+                for i in [-1, -2]:
+                    try:
+                        darks = self.get_dark(Broker.named('local').v2[i])
+                    except Exception:
+                        pass
+                    else:
+                        break
+                else:
+                    raise Exception()
                 image = correct(np.expand_dims(image, 0), flats, darks)[0]
             except Exception:
                 pass
@@ -184,12 +209,13 @@ class FastCCDController(AreaDetectorController):
 
         try:
             # set to 1 temporarily
-            self.device.cam.num_images.put(10)
+            # self.device.cam.num_images.put(10)
 
             # Always do 10 exposures for dark
             # self.device.cam.num_exposures.put(dark_exposures)
 
             # Restage to ensure that dark frames goes into a separate file.
+            yield from bps.mv(self.device.cam.num_images, 10)
             yield from bps.stage(self.device)
             yield from bps.mv(self.device.shutter.shutter_enabled, 2)
             # The `group` parameter passed to trigger MUST start with

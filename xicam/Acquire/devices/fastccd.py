@@ -307,8 +307,6 @@ class FCCDCam(AreaDetectorCam):
     acquire_time = ADCpt(EpicsSignal, 'adjusted_acquire_time')
     acquire_period = ADCpt(EpicsSignal, 'adjusted_acquire_period')
     num_images = ADCpt(EpicsSignal, 'adjusted_num_images')
-    acquire = ADCpt(EpicsSignal, 'adjusted_acquire')
-    acquire_raw = ADCpt(EpicsSignal, 'Acquire')
 
     initialize = ADCpt(EpicsSignal, 'Initialize')
     shutdown = ADCpt(EpicsSignal, "Shutdown")
