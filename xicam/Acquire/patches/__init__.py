@@ -7,6 +7,8 @@ from qtpy.QtWidgets import QApplication
 from qtpy import QtWidgets, QtCore, QtNetwork, QtGui
 from pyqode import qt
 
+from xicam.core import msg
+
 Qt_packages = {'QtWidgets': QtWidgets,
                'QtCore': QtCore,
                'QtNetwork': QtNetwork,
@@ -58,8 +60,12 @@ class DeviceParameter(parameterTypes.ListParameter):
         if not opts.get('limits', None):
             from xicam.plugins import manager as plugin_manager
             happi_devices = plugin_manager.get_plugin_by_name('happi_devices', 'SettingsPlugin')
-            opts['limits'] = {container.device.name: from_container(container.device) for container in
-                              happi_devices.search(**(device_filter or {}))}
+            opts['limits'] = dict()
+            for container in happi_devices.search(**(device_filter or {})):
+                try:
+                    opts['limits'][container.device.name] = from_container(container.device)
+                except Exception as ex:
+                     msg.logError(ex)
 
         super(DeviceParameter, self).__init__(**opts)
 
