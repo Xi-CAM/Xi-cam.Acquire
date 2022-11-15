@@ -70,7 +70,7 @@ setup(
     # ophyd 1.6 series (1.6.1) doesn't work with the Acquire live view (stuck on "waiting for data...")
     install_requires=['xicam', 'numpy', 'qtpy', 'databroker', 'bluesky', 'ophyd==1.5.4', 'happi<2', 'bluesky-darkframes',
                                                                                   'ipykernel!=5.0*,!=5.1.0',
-                      'pyqode.python', 'typhos', 'pydm==1.18.0', 'caproto',
+                      'pyqode.python', 'typhos', 'pydm==1.18.0', 'caproto', 'area-detector-handlers'
                       # 'git+https://github.com/pcdshub/typhos.git',
                       # 'git+https://github.com/pcdshub/happi.git'  # ipykernel has faulty releases
                       ],
