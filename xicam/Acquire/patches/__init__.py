@@ -52,6 +52,46 @@ JsonTcpClient._read_header = _read_header
 #
 # sys.modules['pyqode.qt.QtWidgets.qApp'] = qApp or QApplication.instance()  # qApp is inserted in builtins by PySide2
 
+def sizeHint(self):
+    """
+    Returns the panel size hint. (fixed with of 16px)
+    """
+    metrics = QtGui.QFontMetricsF(self.editor.font())
+    size_hint = QtCore.QSize(int(metrics.height()), int(metrics.height()))
+    if size_hint.width() > 16:
+        size_hint.setWidth(16)
+    return size_hint
+
+import pyqode.core.panels
+pyqode.core.panels.checker.CheckerPanel.sizeHint = sizeHint
+
+
+def _paint_margin(self, event):
+    """ Paints the right margin after editor paint event. """
+    font = QtGui.QFont(self.editor.font_name, self.editor.font_size +
+                       self.editor.zoom_level)
+    metrics = QtGui.QFontMetricsF(font)
+    pos = self._margin_pos
+    offset = self.editor.contentOffset().x() + \
+             self.editor.document().documentMargin()
+    x80 = round(metrics.width(' ') * pos) + offset
+    painter = QtGui.QPainter(self.editor.viewport())
+    painter.setPen(self._pen)
+    painter.drawLine(int(x80), 0, int(x80), 2 ** 16)
+
+import pyqode.core.modes
+pyqode.core.modes.right_margin.RightMarginMode._paint_margin = _paint_margin
+
+
+def sizeHint(self):
+    """ Returns the widget size hint (based on the editor font size) """
+    fm = QtGui.QFontMetricsF(self.editor.font())
+    size_hint = QtCore.QSize(int(fm.height()), int(fm.height()))
+    if size_hint.width() > 16:
+        size_hint.setWidth(16)
+    return size_hint
+
+pyqode.core.panels.folding.FoldingPanel.sizeHint = sizeHint
 
 class DeviceParameter(parameterTypes.ListParameter):
     def __init__(self, device_filter=None, **opts):
