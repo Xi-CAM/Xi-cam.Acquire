@@ -1,6 +1,9 @@
 import sys
 import struct
 
+from PyQt5.QtCore import QPoint
+from PyQt5.QtGui import QPainter
+from PyQt5.QtWidgets import QStyleOption, QStyle
 from happi import from_container
 from pyqtgraph.parametertree import parameterTypes, registerParameterType
 from qtpy.QtWidgets import QApplication
@@ -105,3 +108,34 @@ class DeviceParameter(parameterTypes.ListParameter):
 
 
 registerParameterType("device", DeviceParameter)
+
+
+def paintEvent(self, event):
+    """
+    Paint events are sent to widgets that need to update themselves,
+    for instance when part of a widget is exposed because a covering
+    widget was moved.
+
+    Parameters
+    ----------
+    event : QPaintEvent
+    """
+    self._painter.begin(self)
+    opt = QStyleOption()
+    opt.initFrom(self)
+    self.style().drawPrimitive(QStyle.PE_Widget, opt, self._painter, self)
+    self._painter.setRenderHint(QPainter.Antialiasing)
+    self._painter.setBrush(self._brush)
+    self._painter.setPen(self._pen)
+    if self.circle:
+        rect = self.rect()
+        w = rect.width()
+        h = rect.height()
+        r = min(w, h) / 2.0 - 2.0 * max(self._pen.widthF(), 1.0)
+        self._painter.drawEllipse(QPoint(int(w / 2.0), int(h / 2.0)), int(r), int(r))
+    else:
+        self._painter.drawRect(self.rect())
+    self._painter.end()
+
+import pydm
+pydm.widgets.byte.PyDMBitIndicator.paintEvent = paintEvent
