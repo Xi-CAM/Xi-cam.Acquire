@@ -4,6 +4,7 @@ from bluesky.plans import scan, grid_scan, count, rel_scan, list_scan, rel_list_
 from pyqtgraph.parametertree.parameterTypes import SimpleParameter, ListParameter
 from xicam.gui.utils import ParameterizablePlan
 from xicam.plugins import manager as plugin_manager
+from xicam.core import msg
 from happi.loader import from_container
 from xicam.Acquire.patches import DeviceParameter
 from bluesky import plan_stubs
@@ -14,7 +15,10 @@ def find_device(**filter):
     Returns the first device matching the provided filter
     """
     happi_devices = plugin_manager.get_plugin_by_name('happi_devices', 'SettingsPlugin')
-    return from_container(happi_devices.search(**filter)[0].device)
+    try:
+        return from_container(happi_devices.search(**filter)[0].device)
+    except IndexError:
+        msg.logMessage(f'Device not found: {filter}')
 
 
 def find_devices(**filter):
