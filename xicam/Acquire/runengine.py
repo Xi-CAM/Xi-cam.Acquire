@@ -8,6 +8,7 @@ from bluesky.utils import DuringTask, RunEngineInterrupted
 from xicam.core import msg, threads
 from xicam.gui.utils import ParameterizedPlan, ParameterDialog
 from functools import wraps, partial
+import dask.distributed  # this insulates from errors related to dask asserting its own EventLoopPolicy as squashing the event loop setup for bluesky
 from bluesky import RunEngine, Msg
 import asyncio
 from qtpy import QtCore
@@ -68,14 +69,35 @@ class QRunEngine(QObject):
     def __init__(self, **kwargs):
         super(QRunEngine, self).__init__()
 
-        self.RE = RunEngine(context_managers=[], during_task=DuringTask(), **kwargs)
+        self._RE = None
+        self._kwargs = kwargs
+
+        self.sigFinish.connect(self._check_if_ready)
+
+        self.queue = PriorityQueue()
+        self.process_queue()
+
+    @property
+    def RE(self):
+        return self._RE
+
+    def _close_RE(self):
+        if self._RE.state != 'idle':
+            self._RE.abort('Application is closing.')
+
+    @threads.method(threadkey="run_engine", showBusy=False)
+    def process_queue(self):
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self._RE = RunEngine(context_managers=[], during_task=DuringTask(), loop=self.loop, **self._kwargs)
+        self._RE.subscribe(self.sigDocumentYield.emit)
         self.RE.subscribe(self.sigDocumentYield.emit)
 
         # TODO: pull from settings plugin
         from suitcase.mongo_normalized import Serializer
-        #TODO create single databroker db
-        #python-dotenv stores name-value pairs in .env (add to .gitginore)
-        username=os.getenv("USER_MONGO")
+        # TODO create single databroker db
+        # python-dotenv stores name-value pairs in .env (add to .gitginore)
+        username = os.getenv("USER_MONGO")
         pw = os.getenv("PASSWD_MONGO")
         try:
             self.RE.subscribe(Serializer(f"mongodb://{username}:{pw}@localhost:27017/mds?authsource=mds",
@@ -85,17 +107,6 @@ class QRunEngine(QObject):
                               title="xicam.Acquire Error",
                               level=msg.ERROR)
             msg.logError(err)
-
-        self.sigFinish.connect(self._check_if_ready)
-
-        self.queue = PriorityQueue()
-        self.process_queue()
-
-    @threads.method(threadkey="run_engine", showBusy=False)
-    def process_queue(self):
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
 
         while True:
             try:
