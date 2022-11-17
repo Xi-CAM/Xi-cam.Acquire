@@ -6,6 +6,7 @@ from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QStyleOption, QStyle
 from happi import from_container
 from pyqtgraph.parametertree import parameterTypes, registerParameterType
+from pyqtgraph.parametertree.Parameter import PARAM_TYPES
 from qtpy.QtWidgets import QApplication
 from qtpy import QtWidgets, QtCore, QtNetwork, QtGui
 from pyqode import qt
@@ -113,7 +114,8 @@ class DeviceParameter(parameterTypes.ListParameter):
         super(DeviceParameter, self).__init__(**opts)
 
 
-registerParameterType("device", DeviceParameter)
+if 'device' not in PARAM_TYPES:
+    registerParameterType("device", DeviceParameter)
 
 
 def paintEvent(self, event):
