@@ -1,3 +1,7 @@
+import time
+
+from ophyd import set_and_wait
+from qtpy.QtCore import Qt, QTimer
 from pydm.widgets.display_format import DisplayFormat
 from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout
 from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboBox
@@ -5,13 +9,39 @@ from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboB
 from .areadetector import LabViewCoupledController
 from bluesky import plan_stubs as bps
 
+from xicam.core.msg import logMessage
+
+
+class LiveModeCompatibleLineEdit(PyDMLineEdit):
+    def __init__(self, device, *args, **kwargs):
+        self.device = device
+        super(LiveModeCompatibleLineEdit, self).__init__(*args, **kwargs)
+
+    def send_value(self):
+        #temporarily stop acquisition before changing value
+        set_and_wait(self.device.cam.acquire, 0)
+        time.sleep(.5)
+        super(LiveModeCompatibleLineEdit, self).send_value()
+        QTimer.singleShot(500, self._resume_acquire)
+
+    def _resume_acquire(self):
+        set_and_wait(self.device.cam.acquire, 1)
+
 
 class AndorController(LabViewCoupledController):
+    view_kwargs = {'allow_active': False}
+
     def __init__(self, device, *args, **kwargs):
         super(AndorController, self).__init__(device, *args, **kwargs)
+        self.config_layout.removeRow(4)  # Remove NumExposures (to be replaced)
+        self.config_layout.removeRow(3)  # Remove ImageMode
+        self.config_layout.removeRow(2)  # Remove HDF5 enable
         self.config_layout.removeRow(1)  # Remove period
 
-        self.config_layout.addRow('Number of Images', PyDMLineEdit(init_channel=f'ca://{device.cam.num_images.setpoint_pvname}'))
+        self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
+        self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
+        self.config_layout.addRow('Number of Exposures', self.num_exposures_line_edit)
+        self.config_layout.addRow('Number of Images', self.num_images_line_edit)
 
         shutter_layout = QFormLayout()
         shutter_panel = QGroupBox('Shutter')
@@ -30,6 +60,10 @@ class AndorController(LabViewCoupledController):
 
         self.hlayout.addWidget(shutter_panel)
         self.hlayout.addWidget(cooler_panel)
+
+        self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
+        self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
+        self.start_tv()
 
 
     def _plan(self):
@@ -77,3 +111,21 @@ class AndorController(LabViewCoupledController):
 
     def acquire(self):
         self.RE(self._plan(), **self.metadata)
+
+        self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
+        self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
+        self.start_tv()
+
+    def start_tv(self):
+        logMessage('starting tv mode')
+        self.device.cam.image_mode.put(2)
+        self.device.cam.acquire.put(1)
+        self.num_images_line_edit.setReadOnly(False)
+        self.num_exposures_line_edit.setReadOnly(False)
+
+    def stop_tv(self):
+        logMessage('stopping tv mode')
+        self.device.cam.acquire.put(0)
+        self.device.cam.image_mode.put(1)
+        self.num_images_line_edit.setReadOnly(True)
+        self.num_exposures_line_edit.setReadOnly(True)
