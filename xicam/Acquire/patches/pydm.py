@@ -52,10 +52,13 @@ class IntSignal():
 _send_value = pydm.widgets.line_edit.PyDMLineEdit.send_value
 
 def send_value(self):
-    qt_signal = self.send_value_signal
-    self.send_value_signal = IntSignal(qt_signal)
-    ret = _send_value(self)
-    self.send_value_signal = qt_signal
+    if self.channeltype == int:
+        qt_signal = self.send_value_signal
+        self.send_value_signal = IntSignal(qt_signal)
+        ret = _send_value(self)
+        self.send_value_signal = qt_signal
+    else:
+        ret = _send_value(self)
     return ret
 
 pydm.widgets.line_edit.PyDMLineEdit.send_value = send_value
