@@ -8,6 +8,7 @@ from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, set_and_wait, 
 from ophyd.sim import FakeEpicsSignal
 import numpy as np
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreHDF5, FileStoreIterativeWrite, FileStorePluginBase
+from ophyd.areadetector.plugins import ROIStatNPlugin_V23
 from ophyd.utils import RedundantStaging
 
 
@@ -89,6 +90,7 @@ class Andor(StageOnFirstTrigger, SingleTrigger, AndorDetector):
 
     cam = C(TempfixAndorDetectorCam, 'cam1:')
     image1 = C(ImagePlugin, 'image1:')
+    roi_stat1 = C(ROIStatNPlugin_V23, 'ROIStat1:1:')
     hdf5 = C(HDF5PluginWithFileStore,
                'HDF1:',
                write_path_template='/remote-data/andor_data/%Y/%m/%d/',
