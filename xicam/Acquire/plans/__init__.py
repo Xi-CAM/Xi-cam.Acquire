@@ -61,8 +61,17 @@ class PlanSettingsPlugin(SettingsPlugin):
         if save:
             self.save()
 
+    def update_plan(self, plan: PlanItem, save=True):
+        for i in range(self.plansmodel.rowCount()):
+            item = self.plansmodel.item(i)
+            if item.data(Qt.UserRole) is plan:
+                item.setText(plan.name)
+                self.plansmodel.dataChanged.emit(item.index(), item.index())
+                if save:
+                    self.save()
+
     def toState(self):
-        return self.plans
+        return list(self.plans.values())
 
     def fromState(self, state):
         self.plansmodel.clear()
@@ -73,7 +82,8 @@ class PlanSettingsPlugin(SettingsPlugin):
 
     @property
     def plans(self):
-        return [self.plansmodel.item(i).data(Qt.UserRole) for i in range(self.plansmodel.rowCount())]
+        return {self.plansmodel.item(i).data(Qt.UserRole).name: self.plansmodel.item(i).data(Qt.UserRole)
+                for i in range(self.plansmodel.rowCount())}
 
 
 class PlanDialog(QDialog):
