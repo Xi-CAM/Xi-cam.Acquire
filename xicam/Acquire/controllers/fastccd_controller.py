@@ -29,11 +29,12 @@ class FastCCDController(AreaDetectorController):
         self.noise_correction = QCheckBox('Noise Correction')
         self.layout().addWidget(self.noise_correction)
 
-        self.config_layout.removeRow(3)  # Remove ImageMode
-        self.config_layout.removeRow(2)  # Remove HDF5 enable
-
+        self.config_layout.insertRow(1, 'Acquire Period',
+                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
         self.config_layout.insertRow(2, 'Number of Images',
                               PyDMLineEdit(init_channel=f'ca://{device.hdf5.num_capture.setpoint_pvname}'))
+        self.config_layout.insertRow(4, 'Number of Exposures',
+                                  PyDMLineEdit(init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}'))
 
         camera_layout = QVBoxLayout()
         camera_panel = QGroupBox('Camera State')

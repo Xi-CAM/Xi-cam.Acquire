@@ -50,15 +50,15 @@ class AreaDetectorController(ControllerPlugin):
         self.config_layout = QFormLayout()
         self.config_layout.addRow('Acquire Time',
                                   PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
-        self.config_layout.addRow('Acquire Period',
-                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
-        self.config_layout.addRow('Image Mode',
-                                  PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
-        if hasattr(device, 'hdf5'):
-            self.config_layout.addRow('Save Enabled',
-                                      PyDMCheckbox(init_channel=f'ca://{device.hdf5.enable.setpoint_pvname}'))
-        self.config_layout.addRow('Number of Exposures',
-                                  PyDMLineEdit(init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}'))
+        # self.config_layout.addRow('Acquire Period',
+        #                           PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
+        # self.config_layout.addRow('Image Mode',
+        #                           PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
+        # if hasattr(device, 'hdf5'):
+        #     self.config_layout.addRow('Save Enabled',
+        #                               PyDMCheckbox(init_channel=f'ca://{device.hdf5.enable.setpoint_pvname}'))
+        # self.config_layout.addRow('Number of Exposures',
+        #                           PyDMLineEdit(init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}'))
         # config_layout.addRow('Image Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.image_mode.setpoint_pvname}'))
         # config_layout.addRow('Trigger Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.trigger_mode.setpoint_pvname}'))
 

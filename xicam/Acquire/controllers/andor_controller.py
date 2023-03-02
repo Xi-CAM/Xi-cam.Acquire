@@ -33,10 +33,6 @@ class AndorController(LabViewCoupledController):
 
     def __init__(self, device, *args, **kwargs):
         super(AndorController, self).__init__(device, *args, **kwargs)
-        self.config_layout.removeRow(4)  # Remove NumExposures (to be replaced)
-        self.config_layout.removeRow(3)  # Remove ImageMode
-        self.config_layout.removeRow(2)  # Remove HDF5 enable
-        self.config_layout.removeRow(1)  # Remove period
 
         self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
         self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
