@@ -2,7 +2,7 @@ import time
 from queue import PriorityQueue, Empty
 from dataclasses import dataclass, field
 from pymongo.errors import OperationFailure
-from typing import Any
+from typing import Any, Callable
 
 from bluesky.utils import DuringTask, RunEngineInterrupted
 from xicam.core import msg, threads
@@ -76,6 +76,8 @@ class QRunEngine(QObject):
 
         self.queue = PriorityQueue()
         self.process_queue()
+
+        self.kwargs_callables = set()
 
     @property
     def RE(self):
@@ -174,12 +176,20 @@ class QRunEngine(QObject):
     def _put(self, dialog: MetadataDialog, priority, args, kwargs):
         metadata = dialog.get_metadata()
         kwargs.update(metadata)
+        for kwargs_callable in self.kwargs_callables:
+            kwargs.update(kwargs_callable())
         self.queue.put(PrioritizedPlan(priority, (args, kwargs)))
 
     def _check_if_ready(self):
         # RE has finished processing everything in the queue
         if self.RE.state == 'idle' and self.queue.unfinished_tasks == 0:
             self.sigReady.emit()
+
+    def subscribe_kwargs_callable(self, kwargs_callable:Callable):
+        self.kwargs_callables.add(kwargs_callable)
+
+    def unsubscribe_kwargs_callable(self, kwargs_callable:Callable):
+        self.kwargs_callables.remove(kwargs_callable)
 
 
 RE = None
