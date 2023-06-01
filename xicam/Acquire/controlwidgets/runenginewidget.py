@@ -78,7 +78,10 @@ class RunEngineWidget(QWidget):
     def showPlan(self, current, previous):
         planitem = self.plansmodel.itemFromIndex(current).data(Qt.UserRole)
         self._current_planitem = planitem
-        self.parameterview.setParameters(getattr(planitem.plan, 'parameter', empty_parameter), showTop=False)
+        if self._current_planitem:
+            self.parameterview.setParameters(getattr(planitem.plan, 'parameter', empty_parameter), showTop=False)
+        else:
+            self.parameterview.clear()
 
     def run(self):
         self.metadata.reset()

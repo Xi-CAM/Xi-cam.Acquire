@@ -1,6 +1,7 @@
 from appdirs import user_cache_dir
 import importlib.util
 import os
+from xicam.core.msg import logError, logMessage, CRITICAL
 from .. import runengine
 
 
@@ -18,9 +19,18 @@ class PlanItem(object):
             exec_locals = dict()
 
             # the code is expected to set "plan" to a plan
-            exec(self.code, exec_locals)
+            try:
+                exec(self.code, exec_locals)
+            except Exception as ex:
+                logMessage("The selected plan could not be loaded. The following exception occured in attempting to "
+                           "evaluate the plan.", CRITICAL)
+                logError(ex)
+            else:
+                try:
+                    self._plan = exec_locals['plan']
+                except KeyError:
+                    logMessage('The selected plan does not define a variable "plan" to contain the exported plan.')
 
-            self._plan = exec_locals['plan']
         return self._plan
 
     @property
