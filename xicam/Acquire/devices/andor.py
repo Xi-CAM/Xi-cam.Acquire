@@ -86,7 +86,7 @@ class TempfixAndorDetectorCam(AndorDetectorCam):
 
 
 class Andor(StageOnFirstTrigger, SingleTrigger, AndorDetector):
-    _default_read_attrs = ['hdf5', 'cam']
+    _default_read_attrs = ['hdf5', 'cam', 'roi_stat1']
 
     cam = C(TempfixAndorDetectorCam, 'cam1:')
     image1 = C(ImagePlugin, 'image1:')
@@ -105,3 +105,4 @@ class Andor(StageOnFirstTrigger, SingleTrigger, AndorDetector):
         if self._staged == Staged.yes:
             self.unstage()
         return super(Andor, self).stage()
+

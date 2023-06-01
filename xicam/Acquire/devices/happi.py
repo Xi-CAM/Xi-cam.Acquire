@@ -1,7 +1,7 @@
 from pathlib import Path
 from qtpy.QtCore import Qt, QItemSelection, Signal, QModelIndex
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
-from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView
+from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView, QFormLayout, QLineEdit, QGroupBox
 from happi import Client, Device, HappiItem, from_container
 from happi.backends.mongo_db import MongoBackend
 from happi.backends.json_db import JSONBackend
@@ -16,8 +16,6 @@ from xicam.gui import static
 happi_site_dir = str(Path(site_config_dir) / "happi")
 happi_user_dir = str(Path(user_config_dir) / "happi")
 
-USER_MONGO = os.getenv("USER_MONGO")
-PW_MONGO = os.getenv("PASSWD_MONGO")
 
 
 class HappiClientTreeView(QTreeView):
@@ -66,10 +64,10 @@ class HappiClientModel(QStandardItemModel):
 
     def __init__(self, *args, **kwargs):
         super(HappiClientModel, self).__init__(*args, **kwargs)
-        self._clients = []
+        self._backends = dict()
 
     def add_client(self, client: Client):
-        self._clients.append(client)
+        self._backends[client.backend] = client
         if isinstance(client.backend, JSONBackend):
             client_item = QStandardItem(client.backend.path)
 
@@ -87,6 +85,19 @@ class HappiClientModel(QStandardItemModel):
         device_item.setData(device, self.happiItemRole)
         client_item.appendRow(device_item)
 
+    def remove_client(self, client: Client):
+        for row in range(self.rowCount()):
+            if self.item(row).data().backend == client.backend:
+                self.removeRow(row)
+                break
+        else:
+            raise ValueError(f'Client not found: {client}')
+        del self._backends[client.backend]
+
+    @property
+    def clients(self):
+        return list(self._backends.values())
+
 
 class HappiSettingsPlugin(SettingsPlugin):
     def __init__(self):
@@ -98,27 +109,36 @@ class HappiSettingsPlugin(SettingsPlugin):
             for db_file in Path(db_dir).glob('*.json'):
                 client = Client(path=str(db_file))
                 self._client_model.add_client(client)
-        try:
-            mongo_client = Client(MongoBackend(host='127.0.0.1',
-                                               db='happi',
-                                               collection='labview_static',
-                                               user=USER_MONGO,
-                                               pw=PW_MONGO,
-                                               timeout=None))
-            self._client_model.add_client(mongo_client)
-        except Exception as e: #TODO catch exception properly
-             msg.logError(e)
+
+        self.host = QLineEdit()
+        self.db = QLineEdit()
+        self.collection = QLineEdit()
+        self.user = QLineEdit()
+        self.pw = QLineEdit()
+        self.pw.setEchoMode(QLineEdit.EchoMode.Password)
+        self.mongo_client = None
+
+        form_layout = QFormLayout()
+        form_layout.addRow('Host:', self.host)
+        form_layout.addRow('Database name:', self.db)
+        form_layout.addRow('Collection name:', self.collection)
+        form_layout.addRow('User:', self.user)
+        form_layout.addRow('Password:', self.pw)
+        self.mongo_panel = QGroupBox()
+        self.mongo_panel.setTitle('Happi Mongo Configuration')
+        self.mongo_panel.setLayout(form_layout)
 
         widget = QWidget()
         layout = QVBoxLayout()
+        layout.addWidget(self.mongo_panel)
         layout.addWidget(self._device_view)
         widget.setLayout(layout)
 
         icon = QIcon(str(static.path('icons/calibrate.png')))
         name = "Devices"
         super(HappiSettingsPlugin, self).__init__(icon, name, widget)
-        self._device_view.expandAll()
         self.restore()
+        self._device_view.expandAll()
 
     @property
     def devices_model(self):
@@ -133,7 +153,35 @@ class HappiSettingsPlugin(SettingsPlugin):
         Searches all happi clients (see happi.client.Client.search)
         """
         results = []
-        for client in self._client_model._clients:
+        for client in self._client_model.clients:
             results += client.search(**kwargs)
 
         return results
+
+    def apply(self):
+        if self.mongo_client:
+            self._client_model.remove_client(self.mongo_client)
+        if self.host.text() and self.db.text() and self.collection.text() and self.user.text() and self.pw.text():
+            try:
+                self.mongo_client = Client(MongoBackend(host=self.host.text(),
+                                                   db=self.db.text(),
+                                                   collection=self.collection.text(),
+                                                   user=self.user.text(),
+                                                   pw=self.pw.text(),
+                                                   timeout=None))
+                self._client_model.add_client(self.mongo_client)
+                self._device_view.expandAll()
+            except Exception as e: #TODO catch exception properly
+                 msg.logError(e)
+
+    def toState(self):
+        self.apply()
+        return dict(host=self.host.text(),
+                    db=self.db.text(),
+                    collection=self.collection.text(),
+                    user=self.user.text(),
+                    pw=self.pw.text())
+
+    def fromState(self, state):
+        for key in state:
+            getattr(self, key).setText(state[key])
