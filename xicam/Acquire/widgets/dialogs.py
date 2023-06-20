@@ -72,7 +72,7 @@ class MetadataDialog(QDialog):
         self.setLayout(outer_layout)
 
     def get_metadata(self):
-        return {key: value['value'] for key, value in self.parameter.saveState('user')['children'].items()}
+        return {key: value['value'] for key, value in self.parameter.saveState('user').get('children',{}).items()}
 
     def accept(self):
         intersection = set(self.get_metadata().keys()).intersection(self.reserved)
