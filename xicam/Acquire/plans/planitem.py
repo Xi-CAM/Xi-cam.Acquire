@@ -9,13 +9,26 @@ class PlanItem(object):
     def __init__(self, name, icon, params, code='', plan=None):
         self.name = name
         self.icon = icon
-        self.params = params
-        self.code = code
+        self._params = params
         self._plan = plan
+        self._code = code
+
+    @property
+    def code(self):
+        return self._code
+
+    @code.setter
+    def code(self, code):
+        self._plan = None
+        self._code = code
+        self._params = None
 
     @property
     def plan(self):
-        if self._plan is None and self.code:
+        if self._plan:
+            return self._plan
+
+        elif self.code:
             exec_locals = dict()
 
             # the code is expected to set "plan" to a plan
@@ -30,15 +43,19 @@ class PlanItem(object):
                     self._plan = exec_locals['plan']
                 except KeyError:
                     logMessage('The selected plan does not define a variable "plan" to contain the exported plan.')
+                else:
+                    return self._plan
 
-        return self._plan
+        raise RuntimeError(f'This PlanItem has neither code nor a plan object associated with it: {self}')
 
     @property
     def parameter(self):
-        return getattr(self.plan, 'parameter', None)
+        if not self._params:
+            self._params = getattr(self.plan, 'parameter', None)
+        return self._params
 
     def __reduce__(self):
-        return PlanItem, (self.name, self.icon, self.params, self.code)
+        return PlanItem, (self.name, self.icon, self._params, self.code)
 
     def run(self, callback=None):
-        runengine.RE(self.plan, callback)
+        runengine.RE(self.plan, callback, suppress_parameters_dialog=True)
