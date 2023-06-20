@@ -69,6 +69,9 @@ class PlanSettingsPlugin(SettingsPlugin):
                 self.plansmodel.dataChanged.emit(item.index(), item.index())
                 if save:
                     self.save()
+                return
+        else:
+            raise ValueError('Plan not found for update')
 
     def toState(self):
         return list(self.plans.values())
