@@ -58,6 +58,7 @@ class RunEngineWidget(QWidget):
 
         # Wireup signals
         self.selectionmodel.currentChanged.connect(self.showPlan)
+        self.plansmodel.dataChanged.connect(self.showPlan)
         self.runbutton.clicked.connect(self.run)
         self.abortbutton.clicked.connect(self.abort)
         self.pausebutton.clicked.connect(self.pause)
@@ -75,11 +76,12 @@ class RunEngineWidget(QWidget):
         self.runselectionmodel = QItemSelectionModel(self.runmodel)
         self._current_planitem = None
 
-    def showPlan(self, current, previous):
+    def showPlan(self):
+        current = self.selectionmodel.currentIndex()
         planitem = self.plansmodel.itemFromIndex(current).data(Qt.UserRole)
         self._current_planitem = planitem
         if self._current_planitem:
-            self.parameterview.setParameters(getattr(planitem.plan, 'parameter', empty_parameter), showTop=False)
+            self.parameterview.setParameters(getattr(planitem, 'parameter', empty_parameter), showTop=False)
         else:
             self.parameterview.clear()
 
