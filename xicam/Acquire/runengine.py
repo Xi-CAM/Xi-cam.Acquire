@@ -159,10 +159,10 @@ class QRunEngine(QObject):
             self.threadfuture.start()
             self.sigResume.emit()
 
-    def put(self, *args, priority=1, **kwargs):
+    def put(self, *args, priority=1, suppress_parameters_dialog=False, **kwargs):
         # handle ParameterizedPlan's
         plan = args[0]
-        if hasattr(args[0], 'parameter'):
+        if hasattr(plan, 'parameter') and not suppress_parameters_dialog:
             # Ask for parameters
             param = plan.parameter
             if param:
