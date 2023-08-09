@@ -102,7 +102,11 @@ class Andor(StageOnFirstTrigger, SingleTrigger, AndorDetector):
         self.stage_sigs.update({'cam.image_mode': 1})
 
     def stage(self):
-        if self._staged == Staged.yes:
+        if self._staged in [Staged.yes, Staged.partially]:
             self.unstage()
         return super(Andor, self).stage()
 
+    def stop(self, *, success=False):
+        self._acquisition_signal.put(0)
+        print('stopping')
+        return super().stop()
