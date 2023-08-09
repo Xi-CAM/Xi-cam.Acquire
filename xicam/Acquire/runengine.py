@@ -73,6 +73,8 @@ class QRunEngine(QObject):
         self._kwargs = kwargs
 
         self.sigFinish.connect(self._check_if_ready)
+        self.sigAbort.connect(self._check_if_ready)
+        self.sigException.connect(self._check_if_ready)
 
         self.queue = PriorityQueue()
         self.process_queue()
@@ -141,7 +143,7 @@ class QRunEngine(QObject):
         return self.RE.state == 'idle'
 
     def abort(self, reason=''):
-        if self.RE.state != 'idle':
+        if self.RE.state == 'running':
             self.RE.abort(reason=reason)
             self.sigAbort.emit()
 
