@@ -81,7 +81,7 @@ class HappiClientModel(QStandardItemModel):
 
 
     def add_device(self, client_item: QStandardItem, device: Device):
-        device_item = QStandardItem(device.name)
+        device_item = QStandardItem(device.extraneous.get('display_name', device.name))
         device_item.setData(device, self.happiItemRole)
         client_item.appendRow(device_item)
 
