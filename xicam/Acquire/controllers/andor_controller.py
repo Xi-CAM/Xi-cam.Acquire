@@ -63,6 +63,14 @@ class AndorController(LabViewCoupledController):
 
 
     def _plan(self):
+        while True:
+            acquire_state = yield from bps.rd(self.device.cam.acquire)
+            if not acquire_state:
+                break
+            else:
+                time.sleep(.5)
+                logMessage('Waiting for tvmode to stop...')
+
         yield from bps.open_run()
 
         # stash numcapture and shutter_enabled and num_exposures
@@ -88,6 +96,9 @@ class AndorController(LabViewCoupledController):
             yield from bps.unstage(self.device)
             # restore numcapture and shutter_enabled and num_exposures
         finally:
+            acquire_state = yield from bps.rd(self.device.cam.acquire)
+            if acquire_state:
+                yield from bps.mv(self.device.cam.acquire, 0)
             # yield from bps.mv(self.device.hdf5.num_capture, num_capture)
             yield from bps.mv(self.device.cam.andor_shutter_mode, shutter_state)
             yield from bps.mv(self.device.cam.num_images, num_images)
@@ -108,14 +119,13 @@ class AndorController(LabViewCoupledController):
     def acquire(self):
         self.RE(self._plan(), **self.metadata)
 
-        self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
-        self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
-        self.start_tv()
-
     def start_tv(self):
         logMessage('starting tv mode')
-        self.device.cam.image_mode.put(2)
-        self.device.cam.acquire.put(1)
+        if self.device.cam.image_mode != 2:
+            if self.device.cam.acquire.get() == 1:
+                self.device.cam.acquire.put(0)
+            self.device.cam.image_mode.put(2)
+            self.device.cam.acquire.put(1)
         self.num_images_line_edit.setReadOnly(False)
         self.num_exposures_line_edit.setReadOnly(False)
 
