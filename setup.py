@@ -117,6 +117,7 @@ setup(
         'labview_coupled_controller = xicam.Acquire.controllers.areadetector:LabViewCoupledController',
         'fastccd_controller = xicam.Acquire.controllers.fastccd_controller:FastCCDController',
         'andor_controller = xicam.Acquire.controllers.andor_controller:AndorController',
+        'pimte3_controller = xicam.Acquire.controllers.pimte3_controller:PIMTE3Controller',
         'typhos = xicam.Acquire.controllers.typhoscontroller:TyphosController',
         'diodecontroller = xicam.Acquire.controllers.diodecontroller:DiodeController',
         'psu = xicam.Acquire.controllers.psu:PSUController'],
