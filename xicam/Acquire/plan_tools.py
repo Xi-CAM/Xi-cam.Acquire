@@ -20,7 +20,7 @@ def find_device(**filter):
         return from_container(happi_devices.search(**filter)[0].device)
     except IndexError:
         msg.logMessage(f'Device not found: {filter}')
-    except CaprotoTimeoutError:
+    except (CaprotoTimeoutError, TimeoutError):
         msg.logMessage(f'Device not connected: {filter}')
 
 
