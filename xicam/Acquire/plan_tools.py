@@ -1,6 +1,7 @@
 from bluesky.plans import scan, grid_scan, count, rel_scan, list_scan, rel_list_scan, list_grid_scan, \
     rel_list_grid_scan, log_scan, rel_log_scan, scan_nd, spiral, spiral_fermat, spiral_square, rel_spiral, \
     rel_spiral_fermat, rel_spiral_square, adaptive_scan, rel_adaptive_scan, tune_centroid, tweak, ramp_plan, fly
+from caproto import CaprotoTimeoutError
 from pyqtgraph.parametertree.parameterTypes import SimpleParameter, ListParameter
 from xicam.gui.utils import ParameterizablePlan
 from xicam.plugins import manager as plugin_manager
@@ -19,6 +20,8 @@ def find_device(**filter):
         return from_container(happi_devices.search(**filter)[0].device)
     except IndexError:
         msg.logMessage(f'Device not found: {filter}')
+    except CaprotoTimeoutError:
+        msg.logMessage(f'Device not connected: {filter}')
 
 
 def find_devices(**filter):
