@@ -48,8 +48,8 @@ class AreaDetectorController(ControllerPlugin):
         self.metadata = {}
 
         self.config_layout = QFormLayout()
-        self.config_layout.addRow('Acquire Time',
-                                  PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        # self.config_layout.addRow('Acquire Time',
+        #                           PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
         # self.config_layout.addRow('Acquire Period',
         #                           PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_period.setpoint_pvname}'))
         # self.config_layout.addRow('Image Mode',

@@ -3,7 +3,7 @@ import time
 from ophyd import set_and_wait
 from qtpy.QtCore import Qt, QTimer
 from pydm.widgets.display_format import DisplayFormat
-from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout
+from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox
 from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboBox
 
 from .areadetector import LabViewCoupledController
@@ -34,28 +34,39 @@ class PIMTE3Controller(LabViewCoupledController):
     def __init__(self, device, *args, **kwargs):
         super(PIMTE3Controller, self).__init__(device, *args, **kwargs)
 
+        self.idle_mode = 'TV Mode'
+
         self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
         self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
-        self.config_layout.addRow('Number of Exposures', self.num_exposures_line_edit)
+        self.readout_time_line_edit = PyDMLabel(init_channel=f'ca://{device.cam.readout_time.pvname}')
+        self.config_layout.addRow('Acquire Time (ms)', PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        self.config_layout.addRow('Number of Accumulations', self.num_exposures_line_edit)
         self.config_layout.addRow('Number of Images', self.num_images_line_edit)
+        self.config_layout.addRow('Readout Time (ms)', self.readout_time_line_edit)
+
 
         shutter_layout = QFormLayout()
         shutter_panel = QGroupBox('Shutter')
         shutter_panel.setLayout(shutter_layout)
         shutter_layout.addRow('Shutter Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.shutter_mode.setpoint_pvname}'))
+        shutter_layout.addRow('Detector Status', PyDMLabel(init_channel=f'ca://{device.cam.detector_state.pvname}'))
+        self.idle_mode_selector = QComboBox()
+        self.idle_mode_selector.addItems(['TV Mode', 'Inactive'])
+        shutter_layout.addRow('Idle Mode', self.idle_mode_selector)
+        self.idle_mode_selector.currentTextChanged.connect(self.set_idle_mode)
 
-        # cooler_layout = QFormLayout()
-        # cooler_panel = QGroupBox('Cooler')
-        # cooler_panel.setLayout(cooler_layout)
+        cooler_layout = QFormLayout()
+        cooler_panel = QGroupBox('Temperature')
+        cooler_panel.setLayout(cooler_layout)
         # cooler_layout.addRow('State', PyDMEnumComboBox(init_channel=f'ca://{device.cam.andor_cooler.setpoint_pvname}'))
-        # cooler_layout.addRow('Setpoint', PyDMLineEdit(init_channel=f'ca://{device.cam.temperature.setpoint_pvname}'))
-        # cooler_layout.addRow('Temperature', PyDMLabel(init_channel=f'ca://{device.cam.temperature_actual.pvname}'))
+        cooler_layout.addRow('Sensor Temperature (C)', PyDMLabel(init_channel=f'ca://{device.cam.temperature_actual.pvname}'))
+        cooler_layout.addRow('Temperature Setpoint (C)', PyDMLineEdit(init_channel=f'ca://{device.cam.temperature.setpoint_pvname}'))
         # temp_status = PyDMLabel(init_channel=f'ca://{device.cam.andor_temp_status.pvname}')
         # temp_status.displayFormat = DisplayFormat.String
         # cooler_layout.addWidget(temp_status)
 
+        self.hlayout.addWidget(cooler_panel)
         self.hlayout.addWidget(shutter_panel)
-        # self.hlayout.addWidget(cooler_panel)
 
         self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
         self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
@@ -113,15 +124,26 @@ class PIMTE3Controller(LabViewCoupledController):
         self.start_tv()
 
     def start_tv(self):
-        logMessage('starting tv mode')
-        self.device.cam.image_mode.put(2)
-        self.device.cam.acquire.put(1)
-        self.num_images_line_edit.setReadOnly(False)
-        self.num_exposures_line_edit.setReadOnly(False)
+        if self.idle_mode == 'TV Mode':
+            logMessage('starting tv mode')
+            self.device.cam.image_mode.put(2)
+            self.device.cam.acquire.put(1)
+            self.num_images_line_edit.setReadOnly(False)
+            self.num_exposures_line_edit.setReadOnly(False)
 
     def stop_tv(self):
-        logMessage('stopping tv mode')
-        self.device.cam.acquire.put(0)
-        self.device.cam.image_mode.put(1)
-        self.num_images_line_edit.setReadOnly(True)
-        self.num_exposures_line_edit.setReadOnly(True)
+        if self.idle_mode == 'TV Mode':
+            logMessage('stopping tv mode')
+            self.device.cam.acquire.put(0)
+            self.device.cam.image_mode.put(1)
+            self.num_images_line_edit.setReadOnly(True)
+            self.num_exposures_line_edit.setReadOnly(True)
+
+    def set_idle_mode(self, mode):
+        if self.RE.isIdle:
+            if mode == 'TV Mode':
+                self.idle_mode = mode
+                self.start_tv()
+            else:
+                self.stop_tv()
+        self.idle_mode = mode

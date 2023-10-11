@@ -84,7 +84,8 @@ class StageOnFirstTrigger(ADBase):
 
 
 class PIMTE3Cam(AreaDetectorCam):
-    shutter_timing_mode = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
+    # shutter_timing_mode = Cpt(EpicsSignalRO, 'SDKVersion_RBV')
+    readout_time = Cpt(EpicsSignalRO, 'ReadoutTimeCalc')
 
 
 class PIMTE3(StageOnFirstTrigger, SingleTrigger, AndorDetector):

@@ -36,7 +36,8 @@ class AndorController(LabViewCoupledController):
 
         self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
         self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
-        self.config_layout.addRow('Number of Exposures', self.num_exposures_line_edit)
+        self.config_layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        self.config_layout.addRow('Number of Accumulations', self.num_exposures_line_edit)
         self.config_layout.addRow('Number of Images', self.num_images_line_edit)
 
         shutter_layout = QFormLayout()
