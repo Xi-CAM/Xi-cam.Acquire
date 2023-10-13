@@ -166,12 +166,6 @@ class FastCCDController(AreaDetectorController):
     def _bitmask(self, array):
         return array.astype(int) & FCCD_MASK
 
-    def get_dark(self, run_catalog: BlueskyRun):
-        darks = np.asarray(run_catalog.dark.to_dask()['fastccd_image']).squeeze()
-        if darks.ndim == 3:
-            darks = np.mean(darks, axis=0)
-        return darks
-
     def preprocess(self, image):
         if self.bg_correction.isChecked():
             try:

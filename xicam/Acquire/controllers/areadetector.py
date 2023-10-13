@@ -1,9 +1,12 @@
 from bluesky.plans import count
 from happi import from_container
 from ophyd import Device
+import numpy as np
+from databroker import Broker
 from pydm.widgets.checkbox import PyDMCheckbox
 from pydm.widgets.enum_combo_box import PyDMEnumComboBox
 from pydm.widgets.line_edit import PyDMLineEdit
+from databroker.core import BlueskyRun
 from qtpy.QtWidgets import QVBoxLayout, QCheckBox, QGroupBox, QFormLayout, QHBoxLayout, QPushButton
 from xicam.core import msg
 from xicam.gui.widgets.dynimageview import DynImageView
@@ -105,9 +108,6 @@ class AreaDetectorController(ControllerPlugin):
 
         # self.device.image1.shaped_image.subscribe(self.cacheFrame, 'value')
 
-    def preprocess(self, image):
-        return image
-
     def acquire(self):
         self.RE(count(self.coupled_devices), **self.metadata)
 
@@ -121,6 +121,23 @@ class AreaDetectorController(ControllerPlugin):
     def _ready(self):
         self.abort_button.setEnabled(False)
         self.abort_button.setStyleSheet('')
+
+    def get_dark(self, run_catalog: BlueskyRun):
+        darks = np.asarray(run_catalog.dark.to_dask()[f"{self.device.name}_image"]).squeeze()
+        if darks.ndim == 3:
+            darks = np.mean(darks, axis=0)
+        return darks
+
+    def preprocess(self, image):
+        if self.bg_correction.isChecked():
+            try:
+                flats = np.ones_like(image)
+                darks = self.get_dark(Broker.named('local').v2[-1])
+                image = image - darks
+            except Exception:
+                pass
+
+        return image
 
 
 class LabViewCoupledController(AreaDetectorController):
