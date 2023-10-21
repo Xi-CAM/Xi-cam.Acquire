@@ -3,7 +3,7 @@ import time
 from ophyd import set_and_wait
 from qtpy.QtCore import Qt, QTimer
 from pydm.widgets.display_format import DisplayFormat
-from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox
+from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox, QApplication
 from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboBox
 
 from .areadetector import LabViewCoupledController
@@ -34,7 +34,7 @@ class PIMTE3Controller(LabViewCoupledController):
     def __init__(self, device, *args, **kwargs):
         super(PIMTE3Controller, self).__init__(device, *args, **kwargs)
 
-        self.idle_mode = 'TV Mode'
+        self.idle_mode = 'Inactive'
 
         self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
         self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
@@ -51,7 +51,9 @@ class PIMTE3Controller(LabViewCoupledController):
         shutter_layout.addRow('Shutter Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.shutter_mode.setpoint_pvname}'))
         shutter_layout.addRow('Detector Status', PyDMLabel(init_channel=f'ca://{device.cam.detector_state.pvname}'))
         self.idle_mode_selector = QComboBox()
-        self.idle_mode_selector.addItems(['TV Mode', 'Inactive'])
+        self.idle_mode_selector.addItems(['Inactive', 'TV Mode'])
+        if self.device.cam.image_mode.get() == 2:
+            self.idle_mode_selector.setCurrentText('TV Mode')
         shutter_layout.addRow('Idle Mode', self.idle_mode_selector)
         self.idle_mode_selector.currentTextChanged.connect(self.set_idle_mode)
 
@@ -68,10 +70,8 @@ class PIMTE3Controller(LabViewCoupledController):
         self.hlayout.addWidget(cooler_panel)
         self.hlayout.addWidget(shutter_panel)
 
-        self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
-        self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
-        self.start_tv()
-
+        self.RE.sigStart.connect(self.on_plan_start, Qt.BlockingQueuedConnection)
+        self.RE.sigFinish.connect(self.on_plan_finish, Qt.BlockingQueuedConnection)
 
     def _plan(self):
         yield from bps.open_run()
@@ -119,25 +119,27 @@ class PIMTE3Controller(LabViewCoupledController):
     def acquire(self):
         self.RE(self._plan(), **self.metadata)
 
-        self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
-        self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
-        self.start_tv()
+    def on_plan_start(self):
+        if self.idle_mode_selector.currentText() == 'TV Mode':
+            self.stop_tv()
+
+    def on_plan_finish(self):
+        if self.idle_mode_selector.currentText() == 'TV Mode':
+            self.start_tv()
 
     def start_tv(self):
-        if self.idle_mode == 'TV Mode':
-            logMessage('starting tv mode')
-            self.device.cam.image_mode.put(2)
-            self.device.cam.acquire.put(1)
-            self.num_images_line_edit.setReadOnly(False)
-            self.num_exposures_line_edit.setReadOnly(False)
+        logMessage('starting tv mode')
+        self.device.cam.image_mode.put(2)
+        self.device.cam.acquire.put(1)
+        self.num_images_line_edit.setReadOnly(False)
+        self.num_exposures_line_edit.setReadOnly(False)
 
     def stop_tv(self):
-        if self.idle_mode == 'TV Mode':
-            logMessage('stopping tv mode')
-            self.device.cam.acquire.put(0)
-            self.device.cam.image_mode.put(1)
-            self.num_images_line_edit.setReadOnly(True)
-            self.num_exposures_line_edit.setReadOnly(True)
+        logMessage('stopping tv mode')
+        self.device.cam.acquire.put(0)
+        self.device.cam.image_mode.put(1)
+        self.num_images_line_edit.setReadOnly(True)
+        self.num_exposures_line_edit.setReadOnly(True)
 
     def set_idle_mode(self, mode):
         if self.RE.isIdle:
@@ -147,3 +149,4 @@ class PIMTE3Controller(LabViewCoupledController):
             else:
                 self.stop_tv()
         self.idle_mode = mode
+

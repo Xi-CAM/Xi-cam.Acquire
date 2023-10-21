@@ -5,7 +5,7 @@ from databroker.core import BlueskyRun
 from ophyd import set_and_wait
 from qtpy.QtCore import Qt, QTimer
 from pydm.widgets.display_format import DisplayFormat
-from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout
+from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox, QApplication
 from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboBox
 
 from .areadetector import LabViewCoupledController
@@ -46,6 +46,12 @@ class AndorController(LabViewCoupledController):
         shutter_panel = QGroupBox('Shutter')
         shutter_panel.setLayout(shutter_layout)
         shutter_layout.addRow('Shutter Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.andor_shutter_mode.setpoint_pvname}'))
+        self.idle_mode_selector = QComboBox()
+        self.idle_mode_selector.addItems(['Inactive', 'TV Mode'])
+        if self.device.cam.image_mode.get() == 2:
+            self.idle_mode_selector.setCurrentText('TV Mode')
+        shutter_layout.addRow('Idle Mode', self.idle_mode_selector)
+        self.idle_mode_selector.currentTextChanged.connect(self.set_idle_mode)
 
         cooler_layout = QFormLayout()
         cooler_panel = QGroupBox('Cooler')
@@ -60,10 +66,9 @@ class AndorController(LabViewCoupledController):
         self.hlayout.addWidget(shutter_panel)
         self.hlayout.addWidget(cooler_panel)
 
-        self.RE.sigStart.connect(self.stop_tv, Qt.BlockingQueuedConnection)
-        self.RE.sigFinish.connect(self.start_tv, Qt.BlockingQueuedConnection)
-        self.start_tv()
-
+        self.RE.sigStart.connect(self.on_plan_start, Qt.BlockingQueuedConnection)
+        self.RE.sigFinish.connect(self.on_plan_finish, Qt.BlockingQueuedConnection)
+        # QApplication.instance().aboutToQuit.connect(self.stop_tv)
 
     def _plan(self):
         while True:
@@ -122,13 +127,17 @@ class AndorController(LabViewCoupledController):
     def acquire(self):
         self.RE(self._plan(), **self.metadata)
 
+    def on_plan_start(self):
+        if self.idle_mode_selector.currentText() == 'TV Mode':
+            self.stop_tv()
+    def on_plan_finish(self):
+        if self.idle_mode_selector.currentText() == 'TV Mode':
+            self.start_tv()
+
     def start_tv(self):
         logMessage('starting tv mode')
-        if self.device.cam.image_mode != 2:
-            if self.device.cam.acquire.get() == 1:
-                self.device.cam.acquire.put(0)
-            self.device.cam.image_mode.put(2)
-            self.device.cam.acquire.put(1)
+        self.device.cam.image_mode.put(2)
+        self.device.cam.acquire.put(1)
         self.num_images_line_edit.setReadOnly(False)
         self.num_exposures_line_edit.setReadOnly(False)
 
@@ -138,4 +147,11 @@ class AndorController(LabViewCoupledController):
         self.device.cam.image_mode.put(1)
         self.num_images_line_edit.setReadOnly(True)
         self.num_exposures_line_edit.setReadOnly(True)
+
+    def set_idle_mode(self, mode):
+        if self.RE.isIdle:
+            if mode == 'TV Mode':
+                self.start_tv()
+            else:
+                self.stop_tv()
 
