@@ -48,7 +48,7 @@ class PIMTE3Controller(LabViewCoupledController):
         shutter_layout = QFormLayout()
         shutter_panel = QGroupBox('Shutter')
         shutter_panel.setLayout(shutter_layout)
-        shutter_layout.addRow('Shutter Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.shutter_mode.setpoint_pvname}'))
+        shutter_layout.addRow('Shutter Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.shutter_timing_mode.setpoint_pvname}'))
         shutter_layout.addRow('Detector Status', PyDMLabel(init_channel=f'ca://{device.cam.detector_state.pvname}'))
         self.idle_mode_selector = QComboBox()
         self.idle_mode_selector.addItems(['Inactive', 'TV Mode'])
