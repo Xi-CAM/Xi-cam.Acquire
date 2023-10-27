@@ -63,6 +63,7 @@ class PIMTE3Controller(LabViewCoupledController):
         # cooler_layout.addRow('State', PyDMEnumComboBox(init_channel=f'ca://{device.cam.andor_cooler.setpoint_pvname}'))
         cooler_layout.addRow('Sensor Temperature (C)', PyDMLabel(init_channel=f'ca://{device.cam.temperature_actual.pvname}'))
         cooler_layout.addRow('Temperature Setpoint (C)', PyDMLineEdit(init_channel=f'ca://{device.cam.temperature.setpoint_pvname}'))
+        cooler_layout.addRow('Actual Temperature Setpoint (C)', PyDMLabel(init_channel=f'ca://{device.cam.temperature.pvname}'))
         # temp_status = PyDMLabel(init_channel=f'ca://{device.cam.andor_temp_status.pvname}')
         # temp_status.displayFormat = DisplayFormat.String
         # cooler_layout.addWidget(temp_status)
