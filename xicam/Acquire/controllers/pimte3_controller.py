@@ -92,7 +92,7 @@ class PIMTE3Controller(LabViewCoupledController):
 
             # Restage to ensure that dark frames goes into a separate file.
             yield from bps.stage(self.device)
-            yield from bps.mv(self.device.cam.shutter_timing_mode, 2)
+            yield from bps.mv(self.device.cam.shutter_timing_mode, 1)
             # The `group` parameter passed to trigger MUST start with
             # bluesky-darkframes-trigger.
             yield from bps.trigger_and_read([self.device], name='dark')
