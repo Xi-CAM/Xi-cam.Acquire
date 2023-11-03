@@ -7,9 +7,9 @@ from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QCo
 from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboBox
 
 from .areadetector import LabViewCoupledController
-from bluesky import plan_stubs as bps
+from bluesky import plan_stubs as bps, FailedStatus
 
-from xicam.core.msg import logMessage
+from xicam.core.msg import logMessage, logError
 
 
 class LiveModeCompatibleLineEdit(PyDMLineEdit):
@@ -80,6 +80,7 @@ class PIMTE3Controller(LabViewCoupledController):
         # stash numcapture and shutter_enabled and num_exposures
         # num_capture = yield from bps.rd(self.device.hdf5.num_capture)
         shutter_state = yield from bps.rd(self.device.cam.shutter_timing_mode)
+        logMessage(f'Read shutter state: {shutter_state}')
         num_images = yield from bps.rd(self.device.cam.num_images)
 
         try:
@@ -92,8 +93,16 @@ class PIMTE3Controller(LabViewCoupledController):
 
             # Restage to ensure that dark frames goes into a separate file.
             yield from bps.stage(self.device)
-            yield from bps.mv(self.device.cam.shutter_timing_mode, 1)
-            yield from bps.sleep(1)
+            for i in range(20):  # mte3 seems to need some extra encouraging here, TODO: investigate more
+                try:
+                    yield from bps.mv(self.device.cam.shutter_timing_mode, 1, timeout=1)
+                except FailedStatus:
+                    logMessage('MTE3 not responding; waiting 100ms and trying again...')
+                    yield from bps.sleep(.1)
+                else:
+                    break
+            else:
+                raise RuntimeError('Unable to restore mte3 shutter state')
             # The `group` parameter passed to trigger MUST start with
             # bluesky-darkframes-trigger.
             yield from bps.trigger_and_read([self.device], name='dark')
@@ -102,8 +111,18 @@ class PIMTE3Controller(LabViewCoupledController):
             # restore numcapture and shutter_enabled and num_exposures
         finally:
             # yield from bps.mv(self.device.hdf5.num_capture, num_capture)
-            yield from bps.sleep(.5)
-            yield from bps.mv(self.device.cam.shutter_timing_mode, shutter_state)
+            for i in range(20):  # mte3 seems to need some extra encouraging here, TODO: investigate more
+                try:
+                    # TODO: MTE3 showhow has a shutter_state value of 4. The reset value will be hardcoded to 0 pending further investigation
+                    yield from bps.mv(self.device.cam.shutter_timing_mode, 0, timeout=1)
+                except FailedStatus:
+                    logMessage('MTE3 not responding; waiting 100ms and trying again...')
+                    yield from bps.sleep(.1)
+                else:
+                    break
+            else:
+                raise RuntimeError('Unable to restore mte3 shutter state')
+
             yield from bps.sleep(.5)
             yield from bps.mv(self.device.cam.num_images, num_images)
 
