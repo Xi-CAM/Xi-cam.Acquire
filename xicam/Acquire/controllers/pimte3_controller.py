@@ -79,7 +79,7 @@ class PIMTE3Controller(LabViewCoupledController):
 
         # stash numcapture and shutter_enabled and num_exposures
         # num_capture = yield from bps.rd(self.device.hdf5.num_capture)
-        shutter_state = yield from bps.rd(self.device.cam.shutter_mode)
+        shutter_state = yield from bps.rd(self.device.cam.shutter_timing_mode)
         num_images = yield from bps.rd(self.device.cam.num_images)
 
         try:
@@ -92,7 +92,7 @@ class PIMTE3Controller(LabViewCoupledController):
 
             # Restage to ensure that dark frames goes into a separate file.
             yield from bps.stage(self.device)
-            yield from bps.mv(self.device.cam.shutter_mode, 2)
+            yield from bps.mv(self.device.cam.shutter_timing_mode, 2)
             # The `group` parameter passed to trigger MUST start with
             # bluesky-darkframes-trigger.
             yield from bps.trigger_and_read([self.device], name='dark')
@@ -101,7 +101,7 @@ class PIMTE3Controller(LabViewCoupledController):
             # restore numcapture and shutter_enabled and num_exposures
         finally:
             # yield from bps.mv(self.device.hdf5.num_capture, num_capture)
-            yield from bps.mv(self.device.cam.shutter_mode, shutter_state)
+            yield from bps.mv(self.device.cam.shutter_timing_mode, shutter_state)
             yield from bps.mv(self.device.cam.num_images, num_images)
 
         try:
