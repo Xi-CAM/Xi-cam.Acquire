@@ -102,8 +102,9 @@ class PIMTE3Controller(LabViewCoupledController):
             # restore numcapture and shutter_enabled and num_exposures
         finally:
             # yield from bps.mv(self.device.hdf5.num_capture, num_capture)
+            yield from bps.sleep(.5)
             yield from bps.mv(self.device.cam.shutter_timing_mode, shutter_state)
-            yield from bps.sleep(1)
+            yield from bps.sleep(.5)
             yield from bps.mv(self.device.cam.num_images, num_images)
 
         try:
