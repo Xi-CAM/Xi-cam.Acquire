@@ -81,7 +81,19 @@ class StageOnFirstTrigger(ADBase):
         return super().trigger()
 
 
-class TempfixAndorDetectorCam(AndorDetectorCam):
+class KeepOpenClosed(AndorDetectorCam):
+    modes = ['normal', 'open', 'closed']  # encodes order of modes
+
+    def keep_closed(self):
+        set_and_wait(self.andor_shutter_mode, self.modes.index('closed'))
+
+    def keep_open(self):
+        set_and_wait(self.andor_shutter_mode, self.modes.index('open'))
+
+    def shutter_normally(self):
+        set_and_wait(self.andor_shutter_mode, self.modes.index('normal'))
+
+class TempfixAndorDetectorCam(KeepOpenClosed):
     andor_temp_status = C(EpicsSignalRO, 'AndorTempStatus_RBV', string=True)  # force string value
 
 
