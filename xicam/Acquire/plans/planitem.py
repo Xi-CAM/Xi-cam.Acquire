@@ -6,10 +6,9 @@ from .. import runengine
 
 
 class PlanItem(object):
-    def __init__(self, name, icon, params, code='', plan=None):
+    def __init__(self, name, icon, code='', plan=None):
         self.name = name
         self.icon = icon
-        self._params = params
         self._plan = plan
         self._code = code
 
@@ -55,7 +54,7 @@ class PlanItem(object):
         return self._params
 
     def __reduce__(self):
-        return PlanItem, (self.name, self.icon, self._params, self.code)
+        return PlanItem, (self.name, self.icon, self.code)
 
     def run(self, callback=None):
         runengine.RE(self.plan, callback, suppress_parameters_dialog=True)

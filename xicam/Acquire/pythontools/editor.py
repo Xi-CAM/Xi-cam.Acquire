@@ -56,7 +56,7 @@ class scripteditortoolbar(QToolBar):
         self.current_name = QLabel()
         self.addWidget(self.current_name)
         self.RE = get_run_engine()
-        self.plan = PlanItem('Untitled', '', '', STUB_PLAN)
+        self.plan = PlanItem('Untitled', '', STUB_PLAN)
         self.set_plan(self.plan)
 
     def set_plan(self, plan: PlanItem):
@@ -77,7 +77,7 @@ class scripteditortoolbar(QToolBar):
         elif result == QMessageBox.Cancel:
             return
 
-        self.set_plan(PlanItem('Untitled', '', '', STUB_PLAN))
+        self.set_plan(PlanItem('Untitled', '', STUB_PLAN))
 
     def Open(self):
         plans = pluginmanager.get_plugin_by_name('plans', 'SettingsPlugin').plans
@@ -122,7 +122,7 @@ class scripteditortoolbar(QToolBar):
     def Run(self, script=None):
         if not script: script = self.editor.toPlainText()
 
-        planitem = PlanItem('Temp', '', '', script)
+        planitem = PlanItem('Temp', '', script)
         plan = planitem.plan
 
         self.RE.put(plan)
