@@ -12,6 +12,7 @@ import numpy as np
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreHDF5, FileStoreIterativeWrite, FileStorePluginBase
 from ophyd.areadetector.plugins import ROIStatNPlugin_V23
 from ophyd.utils import RedundantStaging
+from bluesky import plan_stubs as bps
 
 from xicam.core.msg import logMessage
 
@@ -102,6 +103,10 @@ def try_set_and_wait(signal, value, attempts=5, **kwargs):
 class KeepOpenClosed(AreaDetectorCam):
     modes = ['normal', 'closed', 'open']  # encodes order of modes
     shutter_timing_mode = Cpt(EpicsSignalWithRBV, 'ShutterTimingMode')
+
+    def get_shutter_mode(self):
+        mode = self.shutter_timing_mode.get()
+        return mode, self.modes[mode]
 
     def keep_closed(self):
         self.shutter_timing_mode.put(self.modes.index('closed'))

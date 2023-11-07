@@ -84,6 +84,10 @@ class StageOnFirstTrigger(ADBase):
 class KeepOpenClosed(AndorDetectorCam):
     modes = ['normal', 'open', 'closed']  # encodes order of modes
 
+    def get_shutter_mode(self):
+        mode = self.andor_shutter_mode.get()
+        return mode, self.modes[mode]
+
     def keep_closed(self):
         set_and_wait(self.andor_shutter_mode, self.modes.index('closed'))
 
