@@ -96,7 +96,7 @@ class AndorController(LabViewCoupledController):
 
             # Restage to ensure that dark frames goes into a separate file.
             yield from bps.stage(self.device)
-            yield from bps.mv(self.device.cam.andor_shutter_mode, 2)
+            self.device.cam.keep_closed()
             # The `group` parameter passed to trigger MUST start with
             # bluesky-darkframes-trigger.
             yield from bps.trigger_and_read([self.device], name='dark')
@@ -108,7 +108,7 @@ class AndorController(LabViewCoupledController):
             if acquire_state:
                 yield from bps.mv(self.device.cam.acquire, 0)
             # yield from bps.mv(self.device.hdf5.num_capture, num_capture)
-            yield from bps.mv(self.device.cam.andor_shutter_mode, shutter_state)
+            self.device.cam.shutter_normally()
             yield from bps.mv(self.device.cam.num_images, num_images)
 
         try:

@@ -1,7 +1,7 @@
 import time
 
 from ophyd import set_and_wait
-from qtpy.QtCore import Qt, QTimer
+from qtpy.QtCore import Qt, QTimer, Slot
 from pydm.widgets.display_format import DisplayFormat
 from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox, QApplication
 from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboBox
@@ -10,6 +10,43 @@ from .areadetector import LabViewCoupledController
 from bluesky import plan_stubs as bps, FailedStatus
 
 from xicam.core.msg import logMessage, logError
+
+
+class PutAcquirePyDMEnumComboBox(PyDMEnumComboBox):
+    def __init__(self, device, *args, **kwargs):
+        self.device = device
+        super(PutAcquirePyDMEnumComboBox, self).__init__(*args, **kwargs)
+
+    @Slot(int)
+    def internal_combo_box_activated_int(self, index):
+        self.send_value_signal.emit(index)
+        self.send_value_signal.emit(index)
+        QTimer.singleShot(100, self._put_with_acquire)
+
+    def _put_with_acquire(self):
+        restore_pvs = {'shutter_timing_mode':0,
+                       # 'num_images': 1,
+                       'image_mode': 0,
+                       'acquire': 0,
+                       'acquire_time':.1}
+        # stash state
+        state = {pvname: getattr(self.device.cam, pvname).get() for pvname in restore_pvs}
+        for pvname, value in restore_pvs.items():
+            getattr(self.device.cam, pvname).put(value)
+
+        self.device.cam.keep_closed()
+        set_and_wait(self.device.cam.acquire, 1)
+        for t in range(10):
+            if self.device.cam.acquire.get() == 0:
+                break
+            else:
+                time.sleep(.2)
+        else:
+            raise RuntimeError('Could not force an acquistion for 2 seconds while trying to update configuration.')
+
+        # restore state
+        for pvname, value in state.items():
+            getattr(self.device.cam, pvname).put(value)
 
 
 class LiveModeCompatibleLineEdit(PyDMLineEdit):
@@ -48,7 +85,7 @@ class PIMTE3Controller(LabViewCoupledController):
         shutter_layout = QFormLayout()
         shutter_panel = QGroupBox('Shutter')
         shutter_panel.setLayout(shutter_layout)
-        shutter_layout.addRow('Shutter Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.shutter_timing_mode.setpoint_pvname}'))
+        shutter_layout.addRow('Shutter Mode', PutAcquirePyDMEnumComboBox(self.device, init_channel=f'ca://{device.cam.shutter_timing_mode.setpoint_pvname}'))
         shutter_layout.addRow('Detector Status', PyDMLabel(init_channel=f'ca://{device.cam.detector_state.pvname}'))
         self.idle_mode_selector = QComboBox()
         self.idle_mode_selector.addItems(['Inactive', 'TV Mode'])
@@ -93,16 +130,7 @@ class PIMTE3Controller(LabViewCoupledController):
 
             # Restage to ensure that dark frames goes into a separate file.
             yield from bps.stage(self.device)
-            for i in range(20):  # mte3 seems to need some extra encouraging here, TODO: investigate more
-                try:
-                    yield from bps.mv(self.device.cam.shutter_timing_mode, 1, timeout=1)
-                except FailedStatus:
-                    logMessage('MTE3 not responding; waiting 100ms and trying again...')
-                    yield from bps.sleep(.1)
-                else:
-                    break
-            else:
-                raise RuntimeError('Unable to restore mte3 shutter state')
+            self.device.cam.keep_closed()
             # The `group` parameter passed to trigger MUST start with
             # bluesky-darkframes-trigger.
             yield from bps.trigger_and_read([self.device], name='dark')
@@ -111,17 +139,7 @@ class PIMTE3Controller(LabViewCoupledController):
             # restore numcapture and shutter_enabled and num_exposures
         finally:
             # yield from bps.mv(self.device.hdf5.num_capture, num_capture)
-            for i in range(20):  # mte3 seems to need some extra encouraging here, TODO: investigate more
-                try:
-                    # TODO: MTE3 showhow has a shutter_state value of 4. The reset value will be hardcoded to 0 pending further investigation
-                    yield from bps.mv(self.device.cam.shutter_timing_mode, 0, timeout=1)
-                except FailedStatus:
-                    logMessage('MTE3 not responding; waiting 100ms and trying again...')
-                    yield from bps.sleep(.1)
-                else:
-                    break
-            else:
-                raise RuntimeError('Unable to restore mte3 shutter state')
+            self.device.cam.shutter_normally()
 
             yield from bps.sleep(.5)
             yield from bps.mv(self.device.cam.num_images, num_images)
