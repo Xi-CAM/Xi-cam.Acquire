@@ -1,5 +1,5 @@
 from collections import OrderedDict
-import time as ttime
+import time
 import itertools
 
 from ophyd.areadetector.detectors import AndorDetector
@@ -12,6 +12,8 @@ import numpy as np
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreHDF5, FileStoreIterativeWrite, FileStorePluginBase
 from ophyd.areadetector.plugins import ROIStatNPlugin_V23
 from ophyd.utils import RedundantStaging
+
+from xicam.core.msg import logMessage
 
 
 class FramesPerPointNumImages(FileStorePluginBase):
@@ -83,7 +85,39 @@ class StageOnFirstTrigger(ADBase):
         return super().trigger()
 
 
-class PIMTE3Cam(AreaDetectorCam):
+def try_set_and_wait(signal, value, attempts=5, **kwargs):
+    for i in range(attempts):
+        try:
+            set_and_wait(signal, value, **kwargs)
+        except (TimeoutError, IndexError):
+            logMessage(f'{signal} not responding; waiting 100ms and trying again...')
+            time.sleep(.1)
+        else:
+            break
+    else:
+        raise RuntimeError(f'Unable to set {signal} to {value}')
+
+
+
+class KeepOpenClosed(AreaDetectorCam):
+    modes = ['normal', 'closed', 'open']  # encodes order of modes
+    shutter_timing_mode = Cpt(EpicsSignalWithRBV, 'ShutterTimingMode')
+
+    def keep_closed(self):
+        self.shutter_timing_mode.put(self.modes.index('closed'))
+        try_set_and_wait(self.shutter_timing_mode, self.modes.index('closed'), timeout=1)
+
+    def keep_open(self):
+        self.shutter_timing_mode.put(self.modes.index('open'))
+        try_set_and_wait(self.shutter_timing_mode, self.modes.index('open'), timeout=1)
+
+    def shutter_normally(self):
+        self.shutter_timing_mode.put(self.modes.index('normal'))
+        try_set_and_wait(self.shutter_timing_mode, self.modes.index('normal'), timeout=1)
+
+
+
+class PIMTE3Cam(KeepOpenClosed):
     shutter_timing_mode = Cpt(EpicsSignalWithRBV, 'ShutterTimingMode')
     readout_time = Cpt(EpicsSignalRO, 'ReadoutTimeCalc')
 
