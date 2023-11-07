@@ -11,6 +11,7 @@ class PlanItem(object):
         self.icon = icon
         self._plan = plan
         self._code = code
+        self._params = None
 
     @property
     def code(self):
@@ -28,22 +29,7 @@ class PlanItem(object):
             return self._plan
 
         elif self.code:
-            exec_locals = dict()
-
-            # the code is expected to set "plan" to a plan
-            try:
-                exec(self.code, exec_locals)
-            except Exception as ex:
-                logMessage("The selected plan could not be loaded. The following exception occured in attempting to "
-                           "evaluate the plan.", CRITICAL)
-                logError(ex)
-            else:
-                try:
-                    self._plan = exec_locals['plan']
-                except KeyError:
-                    logMessage('The selected plan does not define a variable "plan" to contain the exported plan.')
-                else:
-                    return self._plan
+            return self._eval_plan()
 
         raise RuntimeError(f'This PlanItem has neither code nor a plan object associated with it: {self}')
 
@@ -52,6 +38,24 @@ class PlanItem(object):
         if not self._params:
             self._params = getattr(self.plan, 'parameter', None)
         return self._params
+
+    def _eval_plan(self):
+        exec_locals = dict()
+
+        # the code is expected to set "plan" to a plan
+        try:
+            exec(self.code, exec_locals)
+        except Exception as ex:
+            logMessage("The selected plan could not be loaded. The following exception occured in attempting to "
+                       "evaluate the plan.", CRITICAL)
+            logError(ex)
+        else:
+            try:
+                self._plan = exec_locals['plan']
+            except KeyError:
+                logMessage('The selected plan does not define a variable "plan" to contain the exported plan.')
+            else:
+                return self._plan
 
     def __reduce__(self):
         return PlanItem, (self.name, self.icon, self.code)
