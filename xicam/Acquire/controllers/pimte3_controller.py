@@ -24,29 +24,24 @@ class PutAcquirePyDMEnumComboBox(PyDMEnumComboBox):
         QTimer.singleShot(100, self._put_with_acquire)
 
     def _put_with_acquire(self):
-        restore_pvs = {'shutter_timing_mode':0,
-                       # 'num_images': 1,
+        restore_pvs = {'acquire': 0,
                        'image_mode': 0,
-                       'acquire': 0,
-                       'acquire_time':.1}
+                       'acquire_time':10}
         # stash state
         state = {pvname: getattr(self.device.cam, pvname).get() for pvname in restore_pvs}
         for pvname, value in restore_pvs.items():
-            getattr(self.device.cam, pvname).put(value)
+            set_and_wait(getattr(self.device.cam, pvname), value)
+            # getattr(self.device.cam, pvname).put(value)  # must put twice for mte3 ?!
 
-        self.device.cam.keep_closed()
-        set_and_wait(self.device.cam.acquire, 1)
-        for t in range(10):
-            if self.device.cam.acquire.get() == 0:
-                break
-            else:
-                time.sleep(.2)
-        else:
-            raise RuntimeError('Could not force an acquistion for 2 seconds while trying to update configuration.')
+        time.sleep(.1)
+        status = self.device.trigger()
+        status.wait(timeout=5)
+        time.sleep(.1)
 
         # restore state
-        for pvname, value in state.items():
-            getattr(self.device.cam, pvname).put(value)
+        for pvname, value in reversed(state.items()):
+            set_and_wait(getattr(self.device.cam, pvname), value)
+            # getattr(self.device.cam, pvname).put(value)  # must put twice for mte3 ?!
 
 
 class LiveModeCompatibleLineEdit(PyDMLineEdit):
