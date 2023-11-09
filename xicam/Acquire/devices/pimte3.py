@@ -2,10 +2,9 @@ from collections import OrderedDict
 import time
 import itertools
 
-from ophyd.areadetector.detectors import AndorDetector
 from ophyd.areadetector.base import ADComponent as C, ADBase
 from ophyd.areadetector.cam import AreaDetectorCam
-from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, set_and_wait, AndorDetectorCam, EpicsSignalRO, EpicsSignalWithRBV
+from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, set_and_wait, EpicsSignalRO, EpicsSignalWithRBV, DetectorBase
 from ophyd import Component as Cpt
 from ophyd.sim import FakeEpicsSignal
 import numpy as np
@@ -127,7 +126,7 @@ class PIMTE3Cam(KeepOpenClosed):
     readout_time = Cpt(EpicsSignalRO, 'ReadoutTimeCalc')
 
 
-class PIMTE3(StageOnFirstTrigger, SingleTrigger, AndorDetector):
+class PIMTE3(StageOnFirstTrigger, SingleTrigger, DetectorBase):
     _default_read_attrs = ['hdf5', 'cam', 'roi_stat1']
 
     cam = C(PIMTE3Cam, 'cam1:')
