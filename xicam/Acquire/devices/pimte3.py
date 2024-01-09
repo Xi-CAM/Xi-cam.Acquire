@@ -98,10 +98,13 @@ def try_set_and_wait(signal, value, attempts=5, **kwargs):
         raise RuntimeError(f'Unable to set {signal} to {value}')
 
 
-
 class KeepOpenClosed(AreaDetectorCam):
-    modes = ['normal', 'closed', 'open']  # encodes order of modes
+    readout_time = Cpt(EpicsSignalRO, 'ReadoutTimeCalc')
     shutter_timing_mode = Cpt(EpicsSignalWithRBV, 'ShutterTimingMode')
+
+    _default_configuration_attrs = (AreaDetectorCam._default_configuration_attrs + ('shutter_timing_mode',
+                                                                                    'readout_time'))
+    modes = ['normal', 'closed', 'open']  # encodes order of modes
 
     def get_shutter_mode(self):
         mode = self.shutter_timing_mode.get()
@@ -120,10 +123,8 @@ class KeepOpenClosed(AreaDetectorCam):
         try_set_and_wait(self.shutter_timing_mode, self.modes.index('normal'), timeout=1)
 
 
-
 class PIMTE3Cam(KeepOpenClosed):
-    shutter_timing_mode = Cpt(EpicsSignalWithRBV, 'ShutterTimingMode')
-    readout_time = Cpt(EpicsSignalRO, 'ReadoutTimeCalc')
+    pass
 
 
 class PIMTE3(StageOnFirstTrigger, SingleTrigger, DetectorBase):
