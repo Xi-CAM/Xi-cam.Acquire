@@ -61,4 +61,4 @@ class PlanItem(object):
         return PlanItem, (self.name, self.icon, self.code)
 
     def run(self, callback=None):
-        runengine.RE(self.plan, callback, suppress_parameters_dialog=True)
+        runengine.RE(self.plan, callback, suppress_parameters_dialog=True, plan_name=self.name)
