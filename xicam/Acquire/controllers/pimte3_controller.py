@@ -71,7 +71,8 @@ class PIMTE3Controller(LabViewCoupledController):
         self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
         self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
         self.readout_time_line_edit = PyDMLabel(init_channel=f'ca://{device.cam.readout_time.pvname}')
-        self.config_layout.addRow('Acquire Time (ms)', LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        self.acquire_time_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}')
+        self.config_layout.addRow('Acquire Time (ms)', self.acquire_time_line_edit)
         self.config_layout.addRow('Number of Accumulations', self.num_exposures_line_edit)
         self.config_layout.addRow('Number of Images', self.num_images_line_edit)
         self.config_layout.addRow('Readout Time (ms)', self.readout_time_line_edit)
@@ -158,24 +159,26 @@ class PIMTE3Controller(LabViewCoupledController):
     def on_plan_start(self):
         if self.idle_mode_selector.currentText() == 'TV Mode':
             self.stop_tv()
+        self.num_images_line_edit.setReadOnly(True)
+        self.num_exposures_line_edit.setReadOnly(True)
+        self.acquire_time_line_edit.setReadOnly(True)
 
     def on_plan_finish(self):
         if self.idle_mode_selector.currentText() == 'TV Mode':
             self.start_tv()
+        self.num_images_line_edit.setReadOnly(False)
+        self.num_exposures_line_edit.setReadOnly(False)
+        self.acquire_time_line_edit.setReadOnly(False)
 
     def start_tv(self):
         logMessage('starting tv mode')
         self.device.cam.image_mode.put(2)
         self.device.cam.acquire.put(1)
-        self.num_images_line_edit.setReadOnly(False)
-        self.num_exposures_line_edit.setReadOnly(False)
 
     def stop_tv(self):
         logMessage('stopping tv mode')
         self.device.cam.acquire.put(0)
         self.device.cam.image_mode.put(1)
-        self.num_images_line_edit.setReadOnly(True)
-        self.num_exposures_line_edit.setReadOnly(True)
 
     def set_idle_mode(self, mode):
         if self.RE.isIdle:
