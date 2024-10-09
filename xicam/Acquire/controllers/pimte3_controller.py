@@ -19,8 +19,7 @@ class PutAcquirePyDMEnumComboBox(PyDMEnumComboBox):
 
     @Slot(int)
     def internal_combo_box_activated_int(self, index):
-        self.send_value_signal.emit(index)
-        self.send_value_signal.emit(index)
+
         QTimer.singleShot(100, self._put_with_acquire)
 
     def _put_with_acquire(self):
@@ -31,8 +30,9 @@ class PutAcquirePyDMEnumComboBox(PyDMEnumComboBox):
         state = {pvname: getattr(self.device.cam, pvname).get() for pvname in restore_pvs}
         for pvname, value in restore_pvs.items():
             set_and_wait(getattr(self.device.cam, pvname), value)
-            # getattr(self.device.cam, pvname).put(value)  # must put twice for mte3 ?!
 
+        time.sleep(.1)
+        set_and_wait(self.device.cam.shutter_timing_mode, self.value)
         time.sleep(.1)
         status = self.device.trigger()
         status.wait(timeout=5)
