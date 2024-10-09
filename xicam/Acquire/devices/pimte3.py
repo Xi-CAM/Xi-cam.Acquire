@@ -141,7 +141,7 @@ class PIMTE3(StageOnFirstTrigger, SingleTrigger, DetectorBase):
 
     def __init__(self, *args, **kwargs):
         super(PIMTE3, self).__init__(*args, **kwargs)
-        self.stage_sigs.update({'cam.image_mode': 1})
+        self.stage_sigs.pop('cam.image_mode')
 
     def stage(self):
         if self._staged == Staged.yes:
