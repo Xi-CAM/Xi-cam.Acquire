@@ -19,7 +19,7 @@ class PutAcquirePyDMEnumComboBox(PyDMEnumComboBox):
 
     @Slot(int)
     def internal_combo_box_activated_int(self, index):
-
+        self._outgoing_value = index
         QTimer.singleShot(100, self._put_with_acquire)
 
     def _put_with_acquire(self):
@@ -32,7 +32,7 @@ class PutAcquirePyDMEnumComboBox(PyDMEnumComboBox):
             set_and_wait(getattr(self.device.cam, pvname), value)
 
         time.sleep(.1)
-        set_and_wait(self.device.cam.shutter_timing_mode, self.value)
+        set_and_wait(self.device.cam.shutter_timing_mode._write_pv, self._outgoing_value)
         time.sleep(.1)
         status = self.device.trigger()
         status.wait(timeout=5)
