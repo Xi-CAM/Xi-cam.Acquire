@@ -7,6 +7,8 @@ from xicam.gui.widgets.metadataview import MetadataWidget
 from functools import partial
 from xicam.core import threads
 from xicam.Acquire.runengine import get_run_engine
+import subprocess  # For copying to clipboard
+
 
 empty_parameter = parameterTypes.GroupParameter(name='No parameters')
 
@@ -26,6 +28,7 @@ class RunEngineWidget(QWidget):
 
         self.metadata = MetadataWidget()
 
+        self.copybutton = QPushButton('\u2398' + ' Copy parameters to clipboard')
         self.runbutton = QPushButton('Run')
         self.pausebutton = QPushButton('Pause')
         self.resumebutton = QPushButton('Resume')
@@ -44,6 +47,7 @@ class RunEngineWidget(QWidget):
         self.runlayout = QVBoxLayout()
         self.runlayout.setContentsMargins(0, 0, 0, 0)
         self.runlayout.addWidget(self.parameterview)
+        self.runlayout.addWidget(self.copybutton)
         self.runlayout.addWidget(self.runbutton)
         self.runlayout.addWidget(self.pausebutton)
         self.runlayout.addWidget(self.resumebutton)
@@ -59,6 +63,7 @@ class RunEngineWidget(QWidget):
         # Wireup signals
         self.selectionmodel.currentChanged.connect(self.showPlan)
         self.plansmodel.dataChanged.connect(self.showPlan)
+        self.copybutton.clicked.connect(self.copy)
         self.runbutton.clicked.connect(self.run)
         self.abortbutton.clicked.connect(self.abort)
         self.pausebutton.clicked.connect(self.pause)
@@ -87,6 +92,38 @@ class RunEngineWidget(QWidget):
             self.parameterview.setParameters(getattr(planitem, 'parameter', empty_parameter), showTop=False)
         else:
             self.parameterview.clear()
+
+    def copy(self):
+        self.metadata.reset()
+        planitem = self.plansmodel.itemFromIndex(
+            self.selectionmodel.currentIndex()
+        ).data(Qt.UserRole)
+        print(planitem)
+        ordered_dict = planitem.parameter.saveState()["children"]
+        run_params_str = ""
+        keys_list = list(ordered_dict.keys())  # Convert to a list
+        n = 0
+        while n < len(keys_list):
+            if any(word in ordered_dict[keys_list[n]]["name"].lower() for word in ["start", "min"]):
+                if n + 1 < len(keys_list) and any(word in ordered_dict[keys_list[n+1]]["name"].lower() for word in ["end", "max"]):
+                    run_params_str += ordered_dict[keys_list[n]]["name"] + " = " + str(ordered_dict[keys_list[n]]["value"]) + "\t"
+                    run_params_str += ordered_dict[keys_list[n+1]]["name"] + " = " + str(ordered_dict[keys_list[n+1]]["value"]) + "\n"
+                    n += 2  # Skip the next iteration
+                else:
+                    run_params_str += ordered_dict[keys_list[n]]["name"] + " = " + str(ordered_dict[keys_list[n]]["value"]) + "\n"
+                    n += 1
+            else:
+                run_params_str += ordered_dict[keys_list[n]]["name"] + " = " + str(ordered_dict[keys_list[n]]["value"]) + "\n"
+                n += 1
+        print("Copied to clipboard:\n" + run_params_str)
+
+        # Copy the string to the clipboard
+        if subprocess.sys.platform == 'darwin':  # MacOS
+            subprocess.run(['pbcopy'], input=run_params_str.encode())
+        elif subprocess.sys.platform == 'win32':  # Windows
+            subprocess.run(['clip'], input=run_params_str.encode())
+        else:  # Linux
+            subprocess.run(['xclip', '-selection', 'clipboard'], input=run_params_str.encode())
 
     def run(self):
         self.metadata.reset()
