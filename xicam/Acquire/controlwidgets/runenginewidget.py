@@ -100,23 +100,22 @@ class RunEngineWidget(QWidget):
         ).data(Qt.UserRole)
         parameter_dict = planitem.parameter.saveState(filter='user')["children"]
         run_params_str = ""
-        keys_list = list(parameter_dict.keys())  # Convert to a list
+        keys_list = list(parameter_dict.keys())  # Convert to a list to allow indexing
         n = 0
         while n < len(keys_list):
-            if any(word in parameter_dict[keys_list[n]]["name"].lower() for word in ["start", "min"]):
-                if n + 1 < len(keys_list) and any(
-                        word in parameter_dict[keys_list[n + 1]]["name"].lower() for word in ["end", "max"]):
-                    run_params_str += parameter_dict[keys_list[n]]["name"] + " = " + str(
+            if any(word in keys_list[n].lower() for word in ["start", "min"]):
+                if n + 1 < len(keys_list) and any(word in keys_list[n + 1].lower() for word in ["end", "max"]):
+                    run_params_str += keys_list[n] + " = " + str(
                         parameter_dict[keys_list[n]]["value"]) + "\t"
-                    run_params_str += parameter_dict[keys_list[n + 1]]["name"] + " = " + str(
+                    run_params_str += keys_list[n + 1] + " = " + str(
                         parameter_dict[keys_list[n + 1]]["value"]) + "\n"
                     n += 2  # Skip the next iteration
                 else:
-                    run_params_str += parameter_dict[keys_list[n]]["name"] + " = " + str(
+                    run_params_str += keys_list[n] + " = " + str(
                         parameter_dict[keys_list[n]]["value"]) + "\n"
                     n += 1
             else:
-                run_params_str += parameter_dict[keys_list[n]]["name"] + " = " + str(
+                run_params_str += keys_list[n] + " = " + str(
                     parameter_dict[keys_list[n]]["value"]) + "\n"
                 n += 1
 
