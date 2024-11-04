@@ -1,14 +1,14 @@
+import yaml
+
 from qtpy.QtWidgets import QWidget, QListView, QPushButton, QSplitter, QVBoxLayout
-from qtpy.QtCore import QItemSelectionModel, Qt
-from qtpy.QtGui import QStandardItemModel
+from qtpy.QtCore import QItemSelectionModel, Qt, QMimeData
+from qtpy.QtGui import QStandardItemModel, QClipboard, QGuiApplication
 from xicam.plugins import manager as pluginmanager
 from pyqtgraph.parametertree import ParameterTree, parameterTypes
 from xicam.gui.widgets.metadataview import MetadataWidget
 from functools import partial
-from xicam.core import threads
+from xicam.core import threads, msg
 from xicam.Acquire.runengine import get_run_engine
-import subprocess  # For copying to clipboard
-
 
 empty_parameter = parameterTypes.GroupParameter(name='No parameters')
 
@@ -98,32 +98,35 @@ class RunEngineWidget(QWidget):
         planitem = self.plansmodel.itemFromIndex(
             self.selectionmodel.currentIndex()
         ).data(Qt.UserRole)
-        print(planitem)
-        ordered_dict = planitem.parameter.saveState()["children"]
+        parameter_dict = planitem.parameter.saveState(filter='user')["children"]
         run_params_str = ""
-        keys_list = list(ordered_dict.keys())  # Convert to a list
+        keys_list = list(parameter_dict.keys())  # Convert to a list
         n = 0
         while n < len(keys_list):
-            if any(word in ordered_dict[keys_list[n]]["name"].lower() for word in ["start", "min"]):
-                if n + 1 < len(keys_list) and any(word in ordered_dict[keys_list[n+1]]["name"].lower() for word in ["end", "max"]):
-                    run_params_str += ordered_dict[keys_list[n]]["name"] + " = " + str(ordered_dict[keys_list[n]]["value"]) + "\t"
-                    run_params_str += ordered_dict[keys_list[n+1]]["name"] + " = " + str(ordered_dict[keys_list[n+1]]["value"]) + "\n"
+            if any(word in parameter_dict[keys_list[n]]["name"].lower() for word in ["start", "min"]):
+                if n + 1 < len(keys_list) and any(
+                        word in parameter_dict[keys_list[n + 1]]["name"].lower() for word in ["end", "max"]):
+                    run_params_str += parameter_dict[keys_list[n]]["name"] + " = " + str(
+                        parameter_dict[keys_list[n]]["value"]) + "\t"
+                    run_params_str += parameter_dict[keys_list[n + 1]]["name"] + " = " + str(
+                        parameter_dict[keys_list[n + 1]]["value"]) + "\n"
                     n += 2  # Skip the next iteration
                 else:
-                    run_params_str += ordered_dict[keys_list[n]]["name"] + " = " + str(ordered_dict[keys_list[n]]["value"]) + "\n"
+                    run_params_str += parameter_dict[keys_list[n]]["name"] + " = " + str(
+                        parameter_dict[keys_list[n]]["value"]) + "\n"
                     n += 1
             else:
-                run_params_str += ordered_dict[keys_list[n]]["name"] + " = " + str(ordered_dict[keys_list[n]]["value"]) + "\n"
+                run_params_str += parameter_dict[keys_list[n]]["name"] + " = " + str(
+                    parameter_dict[keys_list[n]]["value"]) + "\n"
                 n += 1
-        print("Copied to clipboard:\n" + run_params_str)
 
         # Copy the string to the clipboard
-        if subprocess.sys.platform == 'darwin':  # MacOS
-            subprocess.run(['pbcopy'], input=run_params_str.encode())
-        elif subprocess.sys.platform == 'win32':  # Windows
-            subprocess.run(['clip'], input=run_params_str.encode())
-        else:  # Linux
-            subprocess.run(['xclip', '-selection', 'clipboard'], input=run_params_str.encode())
+        mime = QMimeData()
+        mime.setText(run_params_str)
+        mime.setData('xicam', yaml.dump(parameter_dict).encode('utf-8'))
+        QGuiApplication.clipboard().setMimeData(mime)
+        msg.logMessage("Copied to clipboard:\n" + run_params_str, level=msg.INFO)
+        msg.notifyMessage('Plan parameters copied to clipboard!')
 
     def run(self):
         self.metadata.reset()
