@@ -1,4 +1,5 @@
 import yaml
+from ophyd import Device
 
 from qtpy.QtWidgets import QWidget, QListView, QPushButton, QSplitter, QVBoxLayout
 from qtpy.QtCore import QItemSelectionModel, Qt, QMimeData
@@ -114,6 +115,10 @@ class RunEngineWidget(QWidget):
                     run_params_str += keys_list[n] + " = " + str(
                         parameter_dict[keys_list[n]]["value"]) + "\n"
                     n += 1
+
+            elif isinstance(parameter_dict[keys_list[n]]["value"], Device):
+                run_params_str += f"{keys_list[n]} = {parameter_dict[keys_list[n]]['value'].name}\n"
+                n += 1
             else:
                 run_params_str += keys_list[n] + " = " + str(
                     parameter_dict[keys_list[n]]["value"]) + "\n"
