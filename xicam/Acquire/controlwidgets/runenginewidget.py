@@ -122,7 +122,8 @@ class RunEngineWidget(QWidget):
         # Copy the string to the clipboard
         mime = QMimeData()
         mime.setText(run_params_str)
-        mime.setData('xicam', yaml.dump(parameter_dict).encode('utf-8'))
+        # TODO: find a way to serialize/deserialize ophyd devices in DeviceParameter's
+        # mime.setData('xicam', yaml.dump(parameter_dict).encode('utf-8'))
         QGuiApplication.clipboard().setMimeData(mime)
         msg.logMessage("Copied to clipboard:\n" + run_params_str, level=msg.INFO)
         msg.notifyMessage('Plan parameters copied to clipboard!')
