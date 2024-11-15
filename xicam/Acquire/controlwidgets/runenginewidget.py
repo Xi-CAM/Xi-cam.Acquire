@@ -1,11 +1,14 @@
+import yaml
+from ophyd import Device
+
 from qtpy.QtWidgets import QWidget, QListView, QPushButton, QSplitter, QVBoxLayout
-from qtpy.QtCore import QItemSelectionModel, Qt
-from qtpy.QtGui import QStandardItemModel
+from qtpy.QtCore import QItemSelectionModel, Qt, QMimeData
+from qtpy.QtGui import QStandardItemModel, QClipboard, QGuiApplication
 from xicam.plugins import manager as pluginmanager
 from pyqtgraph.parametertree import ParameterTree, parameterTypes
 from xicam.gui.widgets.metadataview import MetadataWidget
 from functools import partial
-from xicam.core import threads
+from xicam.core import threads, msg
 from xicam.Acquire.runengine import get_run_engine
 
 empty_parameter = parameterTypes.GroupParameter(name='No parameters')
@@ -26,6 +29,7 @@ class RunEngineWidget(QWidget):
 
         self.metadata = MetadataWidget()
 
+        self.copybutton = QPushButton('\u2398' + ' Copy parameters to clipboard')
         self.runbutton = QPushButton('Run')
         self.pausebutton = QPushButton('Pause')
         self.resumebutton = QPushButton('Resume')
@@ -44,6 +48,7 @@ class RunEngineWidget(QWidget):
         self.runlayout = QVBoxLayout()
         self.runlayout.setContentsMargins(0, 0, 0, 0)
         self.runlayout.addWidget(self.parameterview)
+        self.runlayout.addWidget(self.copybutton)
         self.runlayout.addWidget(self.runbutton)
         self.runlayout.addWidget(self.pausebutton)
         self.runlayout.addWidget(self.resumebutton)
@@ -59,6 +64,7 @@ class RunEngineWidget(QWidget):
         # Wireup signals
         self.selectionmodel.currentChanged.connect(self.showPlan)
         self.plansmodel.dataChanged.connect(self.showPlan)
+        self.copybutton.clicked.connect(self.copy)
         self.runbutton.clicked.connect(self.run)
         self.abortbutton.clicked.connect(self.abort)
         self.pausebutton.clicked.connect(self.pause)
@@ -87,6 +93,45 @@ class RunEngineWidget(QWidget):
             self.parameterview.setParameters(getattr(planitem, 'parameter', empty_parameter), showTop=False)
         else:
             self.parameterview.clear()
+
+    def copy(self):
+        self.metadata.reset()
+        planitem = self.plansmodel.itemFromIndex(
+            self.selectionmodel.currentIndex()
+        ).data(Qt.UserRole)
+        parameter_dict = planitem.parameter.saveState(filter='user')["children"]
+        run_params_str = ""
+        keys_list = list(parameter_dict.keys())  # Convert to a list to allow indexing
+        n = 0
+        while n < len(keys_list):
+            if any(word in keys_list[n].lower() for word in ["start", "min"]):
+                if n + 1 < len(keys_list) and any(word in keys_list[n + 1].lower() for word in ["end", "max"]):
+                    run_params_str += keys_list[n] + " = " + str(
+                        parameter_dict[keys_list[n]]["value"]) + "\t"
+                    run_params_str += keys_list[n + 1] + " = " + str(
+                        parameter_dict[keys_list[n + 1]]["value"]) + "\n"
+                    n += 2  # Skip the next iteration
+                else:
+                    run_params_str += keys_list[n] + " = " + str(
+                        parameter_dict[keys_list[n]]["value"]) + "\n"
+                    n += 1
+
+            elif isinstance(parameter_dict[keys_list[n]]["value"], Device):
+                run_params_str += f"{keys_list[n]} = {parameter_dict[keys_list[n]]['value'].name}\n"
+                n += 1
+            else:
+                run_params_str += keys_list[n] + " = " + str(
+                    parameter_dict[keys_list[n]]["value"]) + "\n"
+                n += 1
+
+        # Copy the string to the clipboard
+        mime = QMimeData()
+        mime.setText(run_params_str)
+        # TODO: find a way to serialize/deserialize ophyd devices in DeviceParameter's
+        # mime.setData('xicam', yaml.dump(parameter_dict).encode('utf-8'))
+        QGuiApplication.clipboard().setMimeData(mime)
+        msg.logMessage("Copied to clipboard:\n" + run_params_str, level=msg.INFO)
+        msg.notifyMessage('Plan parameters copied to clipboard!')
 
     def run(self):
         self.metadata.reset()
