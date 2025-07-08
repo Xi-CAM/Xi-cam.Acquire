@@ -118,7 +118,20 @@ class AreaDetectorController(ControllerPlugin):
         self.RE(count(self.coupled_devices), **self.metadata)
 
     def stop(self):
-        self.RE.stop('Acquisition stopped by Xi-cam user.')
+        # Enhanced graceful stop to prevent file corruption
+        # Pause first to allow current plan step to complete and reach cleanup blocks
+        if self.RE.state == 'running':
+            try:
+                self.RE.request_pause(defer=False)
+                import time
+                time.sleep(0.1)  # Brief moment for pause to take effect
+                if self.RE.state == 'paused':
+                    self.RE.stop()  # Stop from paused state for cleaner shutdown
+            except Exception as e:
+                print(f"Error during graceful stop: {e}")
+                self.RE.stop('Acquisition stopped by Xi-cam user.')
+        else:
+            self.RE.stop('Acquisition stopped by Xi-cam user.')
 
     def abort(self):
         self.RE.abort('Acquisition aborted by Xi-cam user.')
