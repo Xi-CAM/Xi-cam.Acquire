@@ -95,7 +95,7 @@ class QRunEngine(QObject):
         asyncio.set_event_loop(self.loop)
         self._RE = RunEngine(context_managers=[], during_task=DuringTask(), loop=self.loop, **self._kwargs)
         self._RE.subscribe(self.sigDocumentYield.emit)
-        self.RE.subscribe(self.sigDocumentYield.emit)
+        self._RE.subscribe(self._stop_check, 'stop')
 
         # TODO: pull from settings plugin
         from suitcase.mongo_normalized import Serializer
@@ -126,7 +126,7 @@ class QRunEngine(QObject):
             except RunEngineInterrupted:
                 msg.showMessage("Run has been aborted by the user.")
             except Exception as ex:
-                msg.showMessage("An error occured during a Bluesky plan. See the Xi-CAM log for details.")
+                msg.notifyMessage(f"An error occured during a Bluesky plan: {ex}")
                 msg.logError(ex)
                 self.sigException.emit(ex)
             finally:
@@ -192,6 +192,11 @@ class QRunEngine(QObject):
 
     def unsubscribe_kwargs_callable(self, kwargs_callable:Callable):
         self.kwargs_callables.remove(kwargs_callable)
+
+    def _stop_check(self, name, doc):
+        reason = doc.get('reason', None)
+        if reason:
+            msg.notifyMessage(f'Run failed (see log): {reason}')
 
 
 RE = None
