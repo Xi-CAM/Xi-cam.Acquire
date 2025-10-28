@@ -3,7 +3,7 @@ import time
 import numpy as np
 from databroker.core import BlueskyRun
 from ophyd import set_and_wait
-from qtpy.QtCore import Qt, QTimer
+from qtpy.QtCore import Qt, QTimer, Slot
 from pydm.widgets.display_format import DisplayFormat
 from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox, QApplication
 from pydm.widgets import PyDMLineEdit, PyDMLabel, PyDMPushButton, PyDMEnumComboBox
@@ -12,6 +12,38 @@ from .areadetector import LabViewCoupledController
 from bluesky import plan_stubs as bps
 
 from xicam.core.msg import logMessage
+
+
+class PutAcquirePyDMEnumComboBox(PyDMEnumComboBox):
+    def __init__(self, device, *args, **kwargs):
+        self.device = device
+        super(PutAcquirePyDMEnumComboBox, self).__init__(*args, **kwargs)
+
+    @Slot(int)
+    def internal_combo_box_activated_int(self, index):
+        self.send_value_signal.emit(index)
+        self.send_value_signal.emit(index)
+        QTimer.singleShot(100, self._put_with_acquire)
+
+    def _put_with_acquire(self):
+        restore_pvs = {'acquire': 0,
+                       'image_mode': 0,
+                       'acquire_time':.1}
+        # stash state
+        state = {pvname: getattr(self.device.cam, pvname).get() for pvname in restore_pvs}
+        for pvname, value in restore_pvs.items():
+            set_and_wait(getattr(self.device.cam, pvname), value)
+            # getattr(self.device.cam, pvname).put(value)  # must put twice for mte3 ?!
+
+        time.sleep(.1)
+        status = self.device.trigger()
+        status.wait(timeout=5)
+        time.sleep(.1)
+
+        # restore state
+        for pvname, value in reversed(state.items()):
+            set_and_wait(getattr(self.device.cam, pvname), value)
+            # getattr(self.device.cam, pvname).put(value)  # must put twice for mte3 ?!
 
 
 class LiveModeCompatibleLineEdit(PyDMLineEdit):
@@ -38,14 +70,14 @@ class AndorController(LabViewCoupledController):
 
         self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
         self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
-        self.config_layout.addRow('Acquire Time', PyDMLineEdit(init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
+        self.config_layout.addRow('Acquire Time', LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}'))
         self.config_layout.addRow('Number of Accumulations', self.num_exposures_line_edit)
         self.config_layout.addRow('Number of Images', self.num_images_line_edit)
 
         shutter_layout = QFormLayout()
         shutter_panel = QGroupBox('Shutter')
         shutter_panel.setLayout(shutter_layout)
-        shutter_layout.addRow('Shutter Mode', PyDMEnumComboBox(init_channel=f'ca://{device.cam.andor_shutter_mode.setpoint_pvname}'))
+        shutter_layout.addRow('Shutter Mode', PutAcquirePyDMEnumComboBox(device=device, init_channel=f'ca://{device.cam.andor_shutter_mode.setpoint_pvname}'))
         self.idle_mode_selector = QComboBox()
         self.idle_mode_selector.addItems(['Inactive', 'TV Mode'])
         if self.device.cam.image_mode.get() == 2:
