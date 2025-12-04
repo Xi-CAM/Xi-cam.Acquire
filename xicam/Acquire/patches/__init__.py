@@ -1,3 +1,5 @@
+import enum
+
 import sys
 import struct
 
@@ -12,10 +14,11 @@ from pyqode import qt
 from xicam.core import msg
 
 from . import pydm
+from . import typhos
 
 Qt_packages = {'QtWidgets': QtWidgets,
                'QtCore': QtCore,
-               'QtNetwork': QtNetwork,
+               # 'QtNetwork': QtNetwork,
                'QtGui': QtGui}
 
 whitelist = ['qApp', 'Signal']
@@ -118,4 +121,26 @@ if 'device' not in PARAM_TYPES:
     registerParameterType("device", DeviceParameter)
 
 
+def promote_enums(module):
+    """
+    Search enums in the given module and allow unscoped access.
 
+    Taken from:
+    https://github.com/pyqtgraph/pyqtgraph/blob/pyqtgraph-0.12.1/pyqtgraph/Qt.py#L331-L377
+    and adapted to also copy enum values aliased under different names.
+
+    """
+    class_names = [name for name in dir(module) if name.startswith("Q")]
+    for class_name in class_names:
+        klass = getattr(module, class_name)
+        attrib_names = [name for name in dir(klass) if name[0].isupper()]
+        for attrib_name in attrib_names:
+            attrib = getattr(klass, attrib_name)
+            if not isinstance(attrib, enum.EnumMeta):
+                continue
+            for name, value in attrib.__members__.items():
+                setattr(klass, name, value)
+
+promote_enums(QtCore)
+promote_enums(QtGui)
+promote_enums(QtWidgets)

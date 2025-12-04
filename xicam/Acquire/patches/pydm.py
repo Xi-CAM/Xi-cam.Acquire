@@ -1,9 +1,21 @@
 from unittest import mock
 
+import qtpy
+class sip:
+    def isdeleted(self):
+        return False
+qtpy.sip = sip()
+
+from qtpy.QtCore import QRectF
+from qtpy import QtCore
+QtCore.qRound = QRectF
+QtCore.QVariant = lambda: None
+QtCore.PYQT_VERSION_STR = ""
+
 import pydm
-from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QPainter
-from PyQt5.QtWidgets import QStyleOption, QStyle
+from PySide6.QtCore import QPoint
+from PySide6.QtGui import QPainter
+from PySide6.QtWidgets import QStyleOption, QStyle
 
 
 # A patch to fix drawing ellipses with certain newer Qt python bindings
