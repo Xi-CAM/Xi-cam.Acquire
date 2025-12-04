@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "xicam.Acquire"
+dynamic = ["version"]
+description = "Xi-CAM Acquire Plugin"
+readme = "README.md"
+license = "BSD-3-Clause"
+authors = [
+    { name = "Ronald J Pandolfi", email = "ronpandolfi@lbl.gov" },
+]
+keywords = [
+    "analysis",
+    "scattering",
+    "synchrotron",
+    "tomography",
+    "x-ray",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3.6",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "area-detector-handlers",
+    "bluesky-darkframes",
+    "bluesky",
+    "caproto",
+    "happi",
+#    "ipykernel!=5.0*,!=5.1.0",
+    "ophyd",
+    "pydm",
+    "pyqode.python",
+    "pyqode.qt", # seems to need to be a direct dep, otherwise it's a sloppy install
+    "pyqode.core",
+    "typhos",
+    "xicam",
+]
+
+[project.optional-dependencies]
+tests = [
+    "coverage",
+    "pytest",
+]
+
+[project.entry-points."xicam.plugins.ControllerPlugin"]
+andor_controller = "xicam.Acquire.controllers.andor_controller:AndorController"
+areadetector = "xicam.Acquire.controllers.areadetector:AreaDetectorController"
+diodecontroller = "xicam.Acquire.controllers.diodecontroller:DiodeController"
+#fastccd_controller = "xicam.Acquire.controllers.fastccd_controller:FastCCDController"
+labview_coupled_controller = "xicam.Acquire.controllers.areadetector:LabViewCoupledController"
+pimte3_controller = "xicam.Acquire.controllers.pimte3_controller:PIMTE3Controller"
+psu = "xicam.Acquire.controllers.psu:PSUController"
+#saxsdetector = "xicam.Acquire.controllers.saxsdetector:SAXSDetectorController"
+typhos = "xicam.Acquire.controllers.typhoscontroller:TyphosController"
+
+[project.entry-points."xicam.plugins.DataResourcePlugin"]
+bluesky = "xicam.Acquire.datasources.BlueskyDataResource:BlueskyDataResourcePlugin"
+ophyd = "xicam.Acquire.datasources.OphydDataResource:OphydDataResourcePlugin"
+
+[project.entry-points."xicam.plugins.GUIPlugin"]
+acquire = "xicam.Acquire:AcquirePlugin"
+
+[project.entry-points."xicam.plugins.SettingsPlugin"]
+happi_devices = "xicam.Acquire.devices.happi:HappiSettingsPlugin"
+plans = "xicam.Acquire.plans:PlanSettingsPlugin"
+
+[project.urls]
+Homepage = "https://github.com/ronpandolfi/Xi-cam"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/xicam",
+]
