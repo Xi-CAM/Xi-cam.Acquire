@@ -7,5 +7,5 @@ def removeItem(self, item):
     QVBoxLayout.removeItem(self, item)
 QVBoxLayout.removeItem = removeItem
 
-# QtCore.Q_ENUMS = lambda _: None
-QtCore.Q_ENUMS = QtCore.QEnum
+QtCore.Q_ENUMS = lambda _: None
+# QtCore.Q_ENUMS = QtCore.QEnum
