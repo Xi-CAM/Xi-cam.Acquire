@@ -17,7 +17,7 @@ def find_device(**filter):
     """
     happi_devices = plugin_manager.get_plugin_by_name('happi_devices', 'SettingsPlugin')
     try:
-        return from_container(happi_devices.search(**filter)[0].device)
+        return from_container(happi_devices.search(**filter)[0].item)
     except IndexError:
         msg.logMessage(f'Device not found: {filter}')
     except (CaprotoTimeoutError, TimeoutError):
@@ -29,7 +29,7 @@ def find_devices(**filter):
     Returns all devices matching the provided filter
     """
     happi_devices = plugin_manager.get_plugin_by_name('happi_devices', 'SettingsPlugin')
-    return [from_container(container.device) for container in happi_devices.search(**(filter))]
+    return [from_container(container.item) for container in happi_devices.search(**(filter))]
 
 
 class plans:

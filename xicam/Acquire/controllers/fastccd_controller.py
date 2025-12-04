@@ -98,7 +98,7 @@ class FastCCDController(AreaDetectorController):
         # Find coupled devices and add them so they'll be used with RE
         def from_device_container(container) -> Device:
             try:
-                return from_container(container.device)
+                return from_container(container.item)
             except Exception as e:
                 logError(e)
                 return None

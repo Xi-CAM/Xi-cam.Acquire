@@ -110,7 +110,7 @@ class DeviceParameter(parameterTypes.ListParameter):
             opts['limits'] = dict()
             for container in happi_devices.search(**(device_filter or {})):
                 try:
-                    opts['limits'][container.device.name] = from_container(container.device)
+                    opts['limits'][container.item.name] = from_container(container.item)
                 except Exception as ex:
                      msg.logError(ex)
 
