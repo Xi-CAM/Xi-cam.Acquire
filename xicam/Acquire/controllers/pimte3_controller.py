@@ -1,6 +1,6 @@
 import time
 
-from ophyd import set_and_wait
+from ophyd.utils import set_and_wait
 from qtpy.QtCore import Qt, QTimer, Slot
 from pydm.widgets.display_format import DisplayFormat
 from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox, QApplication

@@ -150,6 +150,7 @@ class LabViewCoupledController(AreaDetectorController):
                 return from_container(container.device)
             except Exception as e:
                 msg.logError(e)
+                msg.logMessage(f"Error retreiving device from happi named '{container.metadata['name']}'")
                 return None
 
         happi_settings = plugin_manager.get_plugin_by_name("happi_devices", "SettingsPlugin")

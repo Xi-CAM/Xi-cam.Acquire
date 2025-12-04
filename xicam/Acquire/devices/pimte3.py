@@ -4,13 +4,13 @@ import itertools
 
 from ophyd.areadetector.base import ADComponent as C, ADBase
 from ophyd.areadetector.cam import AreaDetectorCam
-from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, set_and_wait, EpicsSignalRO, EpicsSignalWithRBV, DetectorBase
+from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, EpicsSignalRO, EpicsSignalWithRBV, DetectorBase
 from ophyd import Component as Cpt
 from ophyd.sim import FakeEpicsSignal
 import numpy as np
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreHDF5, FileStoreIterativeWrite, FileStorePluginBase
 from ophyd.areadetector.plugins import ROIStatNPlugin_V23
-from ophyd.utils import RedundantStaging
+from ophyd.utils import RedundantStaging, set_and_wait
 from bluesky import plan_stubs as bps
 
 from xicam.core.msg import logMessage
