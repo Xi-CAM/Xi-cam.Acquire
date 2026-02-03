@@ -68,7 +68,7 @@ class PIMTE3Controller(LabViewCoupledController):
 
         self.idle_mode = 'Inactive'
 
-        self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
+        self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
         self.readout_time_line_edit = PyDMLabel(init_channel=f'ca://{device.cam.readout_time.pvname}')
         self.acquire_time_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}')
         self.config_layout.addRow('Acquire Time (ms)', self.acquire_time_line_edit)
