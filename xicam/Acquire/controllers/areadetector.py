@@ -24,7 +24,7 @@ class ADImageView(AreaDetectorROI,
                   PixelCoordinates,
                   Crosshair,
                   BetterButtons,
-                  LogScaleIntensity,
+                  # LogScaleIntensity,
                   ImageViewHistogramOverflowFix):
     pass
 
