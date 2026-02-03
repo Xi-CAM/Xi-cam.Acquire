@@ -71,7 +71,7 @@ class DiodeController(ControllerPlugin):
 
         def from_device_container(container) -> Device:
             try:
-                return from_container(container.device)
+                return from_container(container.item)
             except Exception as e:
                 logError(e)
                 return None

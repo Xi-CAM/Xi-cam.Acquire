@@ -1,6 +1,6 @@
 import time
 
-from ophyd import set_and_wait
+from ophyd.utils import set_and_wait
 from qtpy.QtCore import Qt, QTimer, Slot
 from pydm.widgets.display_format import DisplayFormat
 from qtpy.QtWidgets import QHBoxLayout, QGroupBox, QVBoxLayout, QFormLayout, QComboBox, QApplication
@@ -69,11 +69,9 @@ class PIMTE3Controller(LabViewCoupledController):
         self.idle_mode = 'Inactive'
 
         self.num_exposures_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_exposures.setpoint_pvname}')
-        self.num_images_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.num_images.setpoint_pvname}')
         self.readout_time_line_edit = PyDMLabel(init_channel=f'ca://{device.cam.readout_time.pvname}')
         self.acquire_time_line_edit = LiveModeCompatibleLineEdit(device=device, init_channel=f'ca://{device.cam.acquire_time.setpoint_pvname}')
         self.config_layout.addRow('Acquire Time (ms)', self.acquire_time_line_edit)
-        self.config_layout.addRow('Number of Accumulations', self.num_exposures_line_edit)
         self.config_layout.addRow('Number of Images', self.num_images_line_edit)
         self.config_layout.addRow('Readout Time (ms)', self.readout_time_line_edit)
 

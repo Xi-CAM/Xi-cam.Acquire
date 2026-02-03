@@ -2,7 +2,7 @@ from pathlib import Path
 from qtpy.QtCore import Qt, QItemSelection, Signal, QModelIndex
 from qtpy.QtGui import QIcon, QStandardItemModel, QStandardItem
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QTreeView, QAbstractItemView, QFormLayout, QLineEdit, QGroupBox
-from happi import Client, Device, HappiItem, from_container
+from happi import Client, HappiItem, from_container
 from happi.backends.mongo_db import MongoBackend
 from happi.backends.json_db import JSONBackend
 from typhos.display import TyphosDeviceDisplay
@@ -80,7 +80,7 @@ class HappiClientModel(QStandardItemModel):
         client_item.setData(client)
 
 
-    def add_device(self, client_item: QStandardItem, device: Device):
+    def add_device(self, client_item: QStandardItem, device):
         device_item = QStandardItem(device.extraneous.get('display_name', device.name))
         device_item.setData(device, self.happiItemRole)
         client_item.appendRow(device_item)

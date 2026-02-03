@@ -8,7 +8,7 @@ from bluesky.utils import DuringTask, RunEngineInterrupted
 from xicam.core import msg, threads
 from xicam.gui.utils import ParameterizedPlan, ParameterDialog
 from functools import wraps, partial
-import dask.distributed  # this insulates from errors related to dask asserting its own EventLoopPolicy as squashing the event loop setup for bluesky
+import distributed  # this insulates from errors related to dask asserting its own EventLoopPolicy as squashing the event loop setup for bluesky
 from bluesky import RunEngine, Msg
 import asyncio
 from qtpy import QtCore

@@ -4,7 +4,8 @@ import itertools
 
 from ophyd.areadetector.detectors import AndorDetector
 from ophyd.areadetector.base import ADComponent as C, ADBase
-from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, set_and_wait, AndorDetectorCam, EpicsSignalRO, EpicsSignalWithRBV
+from ophyd import ImagePlugin, SingleTrigger, Staged, HDF5Plugin, AndorDetectorCam, EpicsSignalRO, EpicsSignalWithRBV
+from ophyd.utils import set_and_wait
 from ophyd.sim import FakeEpicsSignal
 import numpy as np
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreHDF5, FileStoreIterativeWrite, FileStorePluginBase
