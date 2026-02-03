@@ -13,9 +13,9 @@ QtCore.QVariant = lambda: None
 QtCore.PYQT_VERSION_STR = ""
 
 import pydm
-from PySide6.QtCore import QPoint
-from PySide6.QtGui import QPainter
-from PySide6.QtWidgets import QStyleOption, QStyle
+from qtpy.QtCore import QPoint
+from qtpy.QtGui import QPainter
+from qtpy.QtWidgets import QStyleOption, QStyle
 
 
 # A patch to fix drawing ellipses with certain newer Qt python bindings
