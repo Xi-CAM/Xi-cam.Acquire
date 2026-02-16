@@ -26,6 +26,7 @@ class RunEngineWidget(QWidget):
         self.planview.setSelectionModel(self.selectionmodel)
 
         self.parameterview = ParameterTree()
+        self.saved_parameters = None
 
         self.metadata = MetadataWidget()
 
@@ -96,9 +97,11 @@ class RunEngineWidget(QWidget):
 
     def copy(self):
         self.metadata.reset()
-        planitem = self.plansmodel.itemFromIndex(
-            self.selectionmodel.currentIndex()
-        ).data(Qt.UserRole)
+        # If we are in a running state, we should use the saved parameters from the class:
+        if self.saved_parameters is not None:
+            parameter_dict = self.saved_parameters
+        else:
+            planitem = self.plansmodel.itemFromIndex(self.selectionmodel.currentIndex()).data(Qt.UserRole)
         parameter_dict = planitem.parameter.saveState(filter='user')["children"]
         run_params_str = ""
         keys_list = list(parameter_dict.keys())  # Convert to a list to allow indexing
@@ -136,7 +139,7 @@ class RunEngineWidget(QWidget):
     def run(self):
         self.metadata.reset()
         planitem = self.plansmodel.itemFromIndex(self.selectionmodel.currentIndex()).data(Qt.UserRole)
-
+        self.saved_parameters = planitem.parameter.saveState(filter='user')["children"]  # Save the parameters to be accessed in the copy function
         planitem.run(callback=partial(threads.invoke_in_main_thread, self.metadata.doc_consumer, force_event=True))
 
     def abort(self):
@@ -166,6 +169,7 @@ class RunEngineWidget(QWidget):
     def _finished(self):
         self.abortbutton.setEnabled(False)
         self.pausebutton.setEnabled(False)
+        self.saved_parameters = None  # Reset saved parameters after the plan is finished
 
     def _aborted(self):
         self._finished()
