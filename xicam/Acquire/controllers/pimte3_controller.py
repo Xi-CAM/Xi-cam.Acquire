@@ -158,14 +158,12 @@ class PIMTE3Controller(LabViewCoupledController):
         if self.idle_mode_selector.currentText() == 'TV Mode':
             self.stop_tv()
         self.num_images_line_edit.setReadOnly(True)
-        self.num_exposures_line_edit.setReadOnly(True)
         self.acquire_time_line_edit.setReadOnly(True)
 
     def on_plan_finish(self):
         if self.idle_mode_selector.currentText() == 'TV Mode':
             self.start_tv()
         self.num_images_line_edit.setReadOnly(False)
-        self.num_exposures_line_edit.setReadOnly(False)
         self.acquire_time_line_edit.setReadOnly(False)
 
     def start_tv(self):
