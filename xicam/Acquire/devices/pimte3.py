@@ -9,7 +9,7 @@ from ophyd import Component as Cpt
 from ophyd.sim import FakeEpicsSignal
 import numpy as np
 from ophyd.areadetector.filestore_mixins import FileStoreHDF5IterativeWrite, FileStoreHDF5, FileStoreIterativeWrite, FileStorePluginBase
-from ophyd.areadetector.plugins import ROIStatNPlugin_V23
+from ophyd.areadetector.plugins import ROIStatNPlugin_V23, TransformPlugin
 from ophyd.utils import RedundantStaging, set_and_wait
 from bluesky import plan_stubs as bps
 
@@ -132,6 +132,7 @@ class PIMTE3(StageOnFirstTrigger, SingleTrigger, DetectorBase):
 
     cam = C(PIMTE3Cam, 'cam1:')
     image1 = C(ImagePlugin, 'image1:')
+    trans1 = C(TransformPlugin, 'Trans1:')
     roi_stat1 = C(ROIStatNPlugin_V23, 'ROIStat1:1:')
     hdf5 = C(HDF5PluginWithFileStore,
                'HDF1:',
