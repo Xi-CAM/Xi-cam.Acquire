@@ -103,16 +103,25 @@ def sizeHint(self):
 pyqode.core.panels.folding.FoldingPanel.sizeHint = sizeHint
 
 class DeviceParameter(parameterTypes.ListParameter):
-    def __init__(self, device_filter=None, **opts):
+    def __init__(self, device_filters=None, **opts):
         if not opts.get('limits', None):
+            if 'device_filter' in opts:
+                device_filters = opts.pop('device_filter')
+
             from xicam.plugins import manager as plugin_manager
             happi_devices = plugin_manager.get_plugin_by_name('happi_devices', 'SettingsPlugin')
             opts['limits'] = dict()
-            for container in happi_devices.search(**(device_filter or {})):
-                try:
-                    opts['limits'][container.item.name] = from_container(container.item)
-                except Exception as ex:
-                     msg.logError(ex)
+            if not isinstance(device_filters, (list, tuple)):
+                device_filters = [device_filters]
+            devices = dict()
+            for device_filter in device_filters:
+                for container in happi_devices.search(**(device_filter or {})):
+                    try:
+                        devices[container.item.name] = from_container(container.item)
+                    except Exception as ex:
+                         msg.logError(ex)
+
+            opts['limits'] = devices
 
         super(DeviceParameter, self).__init__(**opts)
 
