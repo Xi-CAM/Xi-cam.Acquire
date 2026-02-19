@@ -75,6 +75,10 @@ class AreaDetectorController(ControllerPlugin):
         acquire_button.clicked.connect(self.acquire)
         acquire_layout.addWidget(acquire_button)
 
+        self.stop_button = QPushButton('Stop')
+        self.stop_button.clicked.connect(self.stop)
+        acquire_layout.addWidget(self.stop_button)
+
         self.abort_button = QPushButton('Abort')
         self.abort_button.clicked.connect(self.abort)
         self._ready()  # prepare the appropriate abort btn check state and styling
@@ -93,6 +97,8 @@ class AreaDetectorController(ControllerPlugin):
         # Connect relevant RE signals to update abort btn check state and styling depending on the RE state
         self.RE.sigStart.connect(self._started)
         self.RE.sigReady.connect(self._ready)
+        self.RE.sigStop.connect(self._ready)
+        self.RE.sigAbort.connect(self._ready)
 
         # WIP
         # self.lutCheck = QCheckBox()
@@ -111,14 +117,34 @@ class AreaDetectorController(ControllerPlugin):
     def acquire(self):
         self.RE(count(self.coupled_devices), **self.metadata)
 
+    def stop(self):
+        # Enhanced graceful stop to prevent file corruption
+        # Pause first to allow current plan step to complete and reach cleanup blocks
+        if self.RE.state == 'running':
+            try:
+                self.RE.request_pause(defer=False)
+                import time
+                time.sleep(0.1)  # Brief moment for pause to take effect
+                if self.RE.state == 'paused':
+                    self.RE.stop()  # Stop from paused state for cleaner shutdown
+            except Exception as e:
+                print(f"Error during graceful stop: {e}")
+                self.RE.stop('Acquisition stopped by Xi-cam user.')
+        else:
+            self.RE.stop('Acquisition stopped by Xi-cam user.')
+
     def abort(self):
         self.RE.abort('Acquisition aborted by Xi-cam user.')
 
     def _started(self):
+        self.stop_button.setEnabled(True)
+        self.stop_button.setStyleSheet('background-color:orange;color:white;font-weight:bold;')
         self.abort_button.setEnabled(True)
         self.abort_button.setStyleSheet('background-color:red;color:white;font-weight:bold;')
 
     def _ready(self):
+        self.stop_button.setEnabled(False)
+        self.stop_button.setStyleSheet('')
         self.abort_button.setEnabled(False)
         self.abort_button.setStyleSheet('')
 

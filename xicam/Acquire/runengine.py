@@ -59,6 +59,7 @@ class PrioritizedPlan:
 class QRunEngine(QObject):
     sigDocumentYield = Signal(str, dict)
     sigAbort = Signal()  # TODO: wireup me
+    sigStop = Signal()  # Signal for graceful stop
     sigException = Signal(Exception)
     sigFinish = Signal()
     sigStart = Signal()
@@ -74,6 +75,7 @@ class QRunEngine(QObject):
 
         self.sigFinish.connect(self._check_if_ready)
         self.sigAbort.connect(self._check_if_ready)
+        self.sigStop.connect(self._check_if_ready)
         self.sigException.connect(self._check_if_ready)
 
         self.queue = PriorityQueue()
@@ -146,6 +148,12 @@ class QRunEngine(QObject):
         if self.RE.state == 'running':
             self.RE.abort(reason=reason)
             self.sigAbort.emit()
+
+    def stop(self, reason=''):
+        """Gracefully stop the running plan and mark it as successful."""
+        if self.RE.state == 'running':
+            self.RE.stop()
+            self.sigStop.emit()
 
     def pause(self, defer=False):
         if self.RE.state != 'paused':
