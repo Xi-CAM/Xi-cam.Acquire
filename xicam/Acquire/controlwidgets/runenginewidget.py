@@ -33,7 +33,9 @@ class RunEngineWidget(QWidget):
         self.runbutton = QPushButton('Run')
         self.pausebutton = QPushButton('Pause')
         self.resumebutton = QPushButton('Resume')
+        self.stopbutton = QPushButton('Stop')
         self.abortbutton = QPushButton('Abort')
+        self.stopbutton.setStyleSheet('background-color:orange;color:white;font-weight:bold;')
         self.abortbutton.setStyleSheet('background-color:red;color:white;font-weight:bold;')
 
         # Layout
@@ -52,6 +54,7 @@ class RunEngineWidget(QWidget):
         self.runlayout.addWidget(self.runbutton)
         self.runlayout.addWidget(self.pausebutton)
         self.runlayout.addWidget(self.resumebutton)
+        self.runlayout.addWidget(self.stopbutton)
         self.runlayout.addWidget(self.abortbutton)
         self.runwidget.setLayout(self.runlayout)
         self.splitter.addWidget(self.runwidget)
@@ -67,6 +70,7 @@ class RunEngineWidget(QWidget):
         self.copybutton.clicked.connect(self.copy)
         self.runbutton.clicked.connect(self.run)
         self.abortbutton.clicked.connect(self.abort)
+        self.stopbutton.clicked.connect(self.stop)
         self.pausebutton.clicked.connect(self.pause)
         self.resumebutton.clicked.connect(self.resume)
 
@@ -76,6 +80,7 @@ class RunEngineWidget(QWidget):
         self.RE.sigFinish.connect(self._finished)
         self.RE.sigStart.connect(self._started)
         self.RE.sigAbort.connect(self._aborted)
+        self.RE.sigStop.connect(self._stopped)
 
         # Run model
         self.runmodel = QStandardItemModel()
@@ -142,6 +147,9 @@ class RunEngineWidget(QWidget):
     def abort(self):
         self.RE.abort('Aborted by Xi-cam user.')
 
+    def stop(self):
+        self.RE.stop('Stopped by Xi-cam user.')
+
     def pause(self):
         self.RE.pause()
 
@@ -160,14 +168,19 @@ class RunEngineWidget(QWidget):
 
     def _started(self):
         self.abortbutton.setEnabled(True)
+        self.stopbutton.setEnabled(True)
         self.pausebutton.setEnabled(True)
         self._resumed()
 
     def _finished(self):
         self.abortbutton.setEnabled(False)
+        self.stopbutton.setEnabled(False)
         self.pausebutton.setEnabled(False)
 
     def _aborted(self):
+        self._finished()
+
+    def _stopped(self):
         self._finished()
 
 
